@@ -1,9 +1,9 @@
 // Analyse Stockfish (Node) des parties collectées, avec les mêmes moteur, profondeurs et
 // orchestrateur que le site (ADR-2, ADR-3), pour que le modèle Elo reste valable.
-// Usage : npm run dataset:analyse -- [--preset standard|deep] [--limit N] [--skip N]
+// Usage : npm run dataset:analyse -- [--preset standard|deep] [--limit N] [--skip N] [--until N]
 // Reprise : les parties déjà présentes dans data/analysis-<préréglage>.jsonl sont sautées.
-// `--skip N` ignore les N premières parties collectées, pour faire tourner un second
-// processus sur la suite sans doublon (une ligne en double serait sans effet).
+// `--skip` et `--until` bornent les parties collectées traitées (index de début inclus, de
+// fin exclu), pour répartir l'analyse entre plusieurs processus sans doublon.
 import { parseArgs } from 'node:util';
 import { PRESET_DEPTH, runAnalysis, type Preset } from '../src/analysis/runAnalysis';
 import { parseGame } from '../src/chess/game';
@@ -18,6 +18,7 @@ const { values } = parseArgs({
     preset: { type: 'string', default: 'standard' },
     limit: { type: 'string' },
     skip: { type: 'string', default: '0' },
+    until: { type: 'string' },
   },
 });
 const preset = values.preset as Preset;
@@ -27,7 +28,7 @@ const output = `analysis-${preset}.jsonl`;
 
 const done = new Set(readJsonl<AnalysedGame>(output).map((row) => row.id));
 const todo = readJsonl<CollectedGame>('games.jsonl')
-  .slice(Number(values.skip))
+  .slice(Number(values.skip), values.until ? Number(values.until) : undefined)
   .filter((game) => !done.has(game.id))
   .slice(0, values.limit ? Number(values.limit) : undefined);
 
