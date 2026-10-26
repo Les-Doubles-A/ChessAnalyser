@@ -1,0 +1,15 @@
+{
+  "features": [
+    "constante",
+    "precision",
+    "precision2",
+    "logPerteMoyenne",
+    "tauxImprecisions",
+    "tauxErreurs",
+    "tauxGaffes",
+    "bullet",
+    "rapide",
+    "daily"
+  ],
+  "presets": {}
+}

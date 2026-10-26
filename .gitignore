@@ -1,7 +1,7 @@
 node_modules/
 dist/
 public/engine/
-data/
+/data/
 .env*
 playwright-report/
 test-results/
