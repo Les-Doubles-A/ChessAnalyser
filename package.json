@@ -11,6 +11,8 @@
     "dataset:collect": "node --import ./scripts/ts-hooks.mjs scripts/collect-games.ts",
     "dataset:analyse": "node --import ./scripts/ts-hooks.mjs scripts/analyse-dataset.ts",
     "dataset:split": "node --import ./scripts/ts-hooks.mjs scripts/split-dataset.ts",
+    "elo:calibrate": "node --import ./scripts/ts-hooks.mjs scripts/calibrate-elo.ts",
+    "elo:validate": "node --import ./scripts/ts-hooks.mjs scripts/validate-elo.ts",
     "predev": "npm run engine",
     "dev": "vite",
     "prebuild": "npm run engine",

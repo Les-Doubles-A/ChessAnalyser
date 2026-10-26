@@ -26,6 +26,13 @@ test.describe('Synthèse de la partie (F7), faux moteur', () => {
     await expect(row('Livre')).toHaveText(/Livre02$/);
     await expect(summary(page).getByRole('row', { name: /Non analysé/ })).toHaveCount(0);
 
+    // AC-F6-2 : deux coups par joueur, dont des coups du livre.
+    const elo = summary(page).locator('.elo li');
+    await expect(elo).toHaveText([
+      'Blancs, pressé : Partie trop courte pour estimer le niveau · classement chess.com 820',
+      'Noirs, Testeur : Partie trop courte pour estimer le niveau · classement chess.com 1575',
+    ]);
+
     // AC-F7-3 : ordre chronologique, clic qui affiche la position.
     const moments = summary(page).locator('.key-moments button');
     await expect(moments).toHaveCount(2);
@@ -67,5 +74,10 @@ test.describe('Synthèse de la partie (F7), faux moteur', () => {
     await page.getByRole('button', { name: 'Annuler' }).click();
     await expect(summary(page)).toContainText('Analyse incomplète : synthèse partielle');
     await expect(summary(page).getByRole('row', { name: /Non analysé/ })).toBeVisible();
+    // AC-F6-3 : aucune estimation sur une analyse incomplète.
+    await expect(summary(page).locator('.elo')).not.toContainText('Niveau estimé');
+    await expect(summary(page).locator('.elo li').first()).toContainText(
+      'Disponible quand l’analyse est complète',
+    );
   });
 });

@@ -1,4 +1,8 @@
+import type { PlayerSide, TimeClass } from '../api/chesscom';
+import { estimateElo, playerFeatures, type EloEstimate, type EloModel } from '../analysis/elo';
 import { COUNT_KEYS, summarizeGame, type CountKey } from '../analysis/keyMoments';
+import type { Preset } from '../analysis/runAnalysis';
+import eloModelJson from '../data/elo-model.json';
 import type { OpeningIndex } from '../analysis/openings';
 import type { GameReport } from '../analysis/report';
 import type { ParsedGame } from '../chess/game';
@@ -14,11 +18,39 @@ interface Props {
   /** Analyse en cours sans résultat complet à montrer. */
   pending: boolean;
   onSelect: (position: number) => void;
+  white: PlayerSide;
+  black: PlayerSide;
+  timeClass: TimeClass | 'unknown';
+  /** Préréglage des évaluations affichées, qui choisit le modèle Elo. */
+  preset: Preset;
+  /** Modèle embarqué par défaut ; remplaçable pour les tests. */
+  eloModel?: EloModel;
 }
+
+const ELO_MODEL = eloModelJson as EloModel;
 
 const COUNT_LABEL = (key: CountKey) => (key === 'unanalysed' ? 'Non analysé' : CATEGORY[key].label);
 
-export function Summary({ game, report, openings, url, pending, onSelect }: Props) {
+function eloText(estimate: EloEstimate | null): string {
+  if (!estimate) return 'Disponible quand l’analyse est complète';
+  if (estimate.kind === 'too-short') return 'Partie trop courte pour estimer le niveau';
+  if (estimate.kind === 'unavailable') return 'Estimation non calibrée pour ce préréglage';
+  return `Niveau estimé sur cette partie : ≈ ${estimate.value} (${estimate.low} à ${estimate.high}), confiance ${estimate.confidence}`;
+}
+
+export function Summary({
+  game,
+  report,
+  openings,
+  url,
+  pending,
+  onSelect,
+  white,
+  black,
+  timeClass,
+  preset,
+  eloModel = ELO_MODEL,
+}: Props) {
   const link = (
     <p>
       <a href={url} target="_blank" rel="noopener noreferrer">
@@ -50,6 +82,27 @@ export function Summary({ game, report, openings, url, pending, onSelect }: Prop
           Analyse incomplète : synthèse partielle
         </p>
       )}
+
+      <h3>Niveau joué</h3>
+      <ul className="elo">
+        {(
+          [
+            ['w', 'Blancs', white],
+            ['b', 'Noirs', black],
+          ] as const
+        ).map(([color, side, player]) => (
+          <li key={color} data-color={color}>
+            <strong>
+              {side}, {player.username}
+            </strong>{' '}
+            :{' '}
+            {eloText(
+              estimateElo(playerFeatures(report, color), timeClass, eloModel.presets[preset]),
+            )}{' '}
+            <span className="muted">· classement chess.com {player.rating}</span>
+          </li>
+        ))}
+      </ul>
 
       <p className="opening">
         Ouverture :{' '}

@@ -708,6 +708,15 @@ button.game-row:hover {
   margin: 0.3rem 0;
 }
 
+.elo {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+}
+
+.elo li {
+  margin: 0.2rem 0;
+}
+
 .counts {
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;

@@ -320,6 +320,10 @@ function Replay({
           url={game.url}
           pending={!report.complete && state.status === 'running'}
           onSelect={go}
+          white={game.white}
+          black={game.black}
+          timeClass={game.timeClass}
+          preset={state.shownPreset ?? 'standard'}
         />
         <MoveList plies={parsed.plies} moves={report.moves} position={shown} onSelect={go} />
       </div>

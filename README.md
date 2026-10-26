@@ -40,6 +40,8 @@ Trois scripts Node préparent, dans `data/` (exclu de git, jamais publié), les 
 | `npm run dataset:analyse -- [--preset deep]` | Analyse chaque partie avec Stockfish sous Node (Standard par défaut, environ 6 s par partie)                                              |
 | `npm run dataset:split`                      | Sépare de façon fixe calibration et validation par joueur, écrit le rapport de répartition                                                |
 
+Ensuite, `npm run elo:calibrate` ajuste le modèle sur `data/calibration.jsonl` et l'écrit dans `src/data/elo-model.json` (versionné, embarqué dans le site) ; `npm run elo:validate` le contrôle sur les joueurs de `data/validation.jsonl` et écrit `docs/elo-validation-<préréglage>.md` (statistiques agrégées seulement). Les deux acceptent `-- --preset deep`.
+
 Seuls sont conservés les classements, la cadence, les coups et des pseudonymes (HMAC avec une clé locale `data/secret.txt`). La file d'attente de la collecte (`data/collect-state.json`) contient des pseudos en clair ; elle est supprimée quand les quotas sont atteints.
 
 ## Organisation
