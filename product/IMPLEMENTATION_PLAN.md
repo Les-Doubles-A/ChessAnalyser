@@ -44,7 +44,7 @@
 - **Tests** : `npm test`, `npm run test:e2e`.
 - **Terminé quand** : `npm install && npm test && npm run test:e2e && npm run build` réussit sur une copie propre du dépôt.
 - **Couvre** : fondations (aucun critère directement).
-- **Statut** : fait (2026-10-24). Preuve : `npm run test:all` (types, lint, 29 tests unitaires, 38 tests Playwright) et `npm run build` réussis. D1, D2 et D3 appliquées selon les recommandations, sans réponse de l'utilisateur. Écart : TypeScript 6.0.3 au lieu de 7.0.2, car `typescript-eslint` 8.72.0 exige `typescript <6.1.0`. Reste : l'essai sur une copie propre du dépôt n'a pas été fait (aucun commit à ce stade).
+- **Statut** : fait (2026-10-24). Preuve : `npm run test:all` (types, lint, 29 tests unitaires, 38 tests Playwright) et `npm run build` réussis. D1, D2 et D3 appliquées selon les recommandations, sans réponse de l'utilisateur. Écart : TypeScript 6.0.3 au lieu de 7.0.2, car `typescript-eslint` 8.72.0 exige `typescript <6.1.0`. Essai sur une copie propre fait le 2026-10-26 (`npm ci`, Prettier, types, 105 tests unitaires, build) : il a révélé que la règle `data/` du `.gitignore` excluait aussi `src/data/` (base d'ouvertures et modèle Elo absents du dépôt) ; règle ramenée à `/data/`, fichiers versionnés, essai repassé avec succès.
 
 ### T2 : Client API chess.com
 
