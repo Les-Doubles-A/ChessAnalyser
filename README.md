@@ -1,0 +1,52 @@
+# ChessAnalyser
+
+Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, on choisit une partie, puis Stockfish analyse chaque position. Le site affiche la barre et la courbe d'évaluation, la classification de chaque coup, le meilleur coup et la précision des deux joueurs. La synthèse et l'estimation d'Elo arrivent dans la tranche suivante (voir `product/IMPLEMENTATION_PLAN.md`).
+
+Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs. Le calcul se fait entièrement dans le navigateur.
+
+## Prérequis
+
+- Node.js 24 et npm 11 (versions utilisées pendant le développement)
+
+## Installation
+
+```sh
+npm install
+npx playwright install chromium firefox   # navigateurs des tests de bout en bout
+```
+
+## Commandes
+
+| Commande              | Rôle                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `npm run dev`         | Copie le moteur puis lance le serveur de développement (http://localhost:5173)          |
+| `npm run build`       | Copie le moteur, vérifie les types, build statique dans `dist/`                         |
+| `npm test`            | Tests unitaires (Vitest)                                                                |
+| `npm run test:engine` | Tests d'intégration avec le vrai Stockfish sous Node                                    |
+| `npm run test:e2e`    | Tests de bout en bout (Playwright, Chromium et Firefox, API chess.com simulée)          |
+| `npm run test:all`    | Types, lint, tests unitaires, moteur et bout en bout                                    |
+| `npm run engine`      | Copie `stockfish-19-lite-single` (.js et .wasm) de `node_modules` vers `public/engine/` |
+| `npm run openings`    | Régénère `src/data/openings.json` depuis lichess-org/chess-openings (CC0)               |
+| `npm run lint`        | ESLint                                                                                  |
+| `npm run format`      | Prettier                                                                                |
+
+## Organisation
+
+```
+src/api/        client de l'API publique chess.com (requêtes en série)
+src/chess/      lecture des PGN (chess.js)
+src/engine/     dialogue UCI, Stockfish en Web Worker (site) ou sous Node (tests, scripts)
+src/analysis/   probabilité de gain, précision (algorithme Lichess), classification, ouvertures
+src/data/       base d'ouvertures générée
+src/ui/         composants React
+scripts/        copie du moteur, génération de la base d'ouvertures
+tests/unit/     tests Vitest
+tests/engine/   tests avec le vrai moteur
+tests/e2e/      tests Playwright (dont un faux moteur UCI scripté)
+tests/fixtures/ réponses chess.com fictives, partie de référence
+product/        cadrage : brief, critères d'acceptation, architecture, plan, risques
+```
+
+## Licence
+
+GPL-3.0-or-later (voir `LICENSE`). Ce choix est imposé par Stockfish (GPL-3.0), embarqué dans le site ; sa licence est copiée dans `public/engine/COPYING-stockfish.txt`. La base d'ouvertures vient de lichess-org/chess-openings (CC0-1.0). La formule de précision reprend l'algorithme publié par Lichess.

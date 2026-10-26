@@ -1,0 +1,9 @@
+dist
+node_modules
+product
+playwright-report
+test-results
+package-lock.json
+LICENSE
+public/engine
+src/data
