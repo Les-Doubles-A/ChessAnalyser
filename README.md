@@ -30,6 +30,18 @@ npx playwright install chromium firefox   # navigateurs des tests de bout en bou
 | `npm run lint`        | ESLint                                                                                  |
 | `npm run format`      | Prettier                                                                                |
 
+## Jeu de calibration de l'Elo
+
+Trois scripts Node préparent, dans `data/` (exclu de git, jamais publié), les parties qui servent à calibrer l'estimation d'Elo. Chacun reprend là où il s'est arrêté si on le relance.
+
+| Commande                                     | Rôle                                                                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dataset:collect -- [--max-games N]` | Collecte en série sur l'API chess.com (User-Agent avec contact) environ 2365 parties classées, réparties de 400 à 2600 Elo et par cadence |
+| `npm run dataset:analyse -- [--preset deep]` | Analyse chaque partie avec Stockfish sous Node (Standard par défaut, environ 6 s par partie)                                              |
+| `npm run dataset:split`                      | Sépare de façon fixe calibration et validation par joueur, écrit le rapport de répartition                                                |
+
+Seuls sont conservés les classements, la cadence, les coups et des pseudonymes (HMAC avec une clé locale `data/secret.txt`). La file d'attente de la collecte (`data/collect-state.json`) contient des pseudos en clair ; elle est supprimée quand les quotas sont atteints.
+
 ## Organisation
 
 ```
@@ -39,7 +51,7 @@ src/engine/     dialogue UCI, Stockfish en Web Worker (site) ou sous Node (tests
 src/analysis/   probabilité de gain, précision (algorithme Lichess), classification, ouvertures
 src/data/       base d'ouvertures générée
 src/ui/         composants React
-scripts/        copie du moteur, génération de la base d'ouvertures
+scripts/        copie du moteur, base d'ouvertures, jeu de calibration de l'Elo
 tests/unit/     tests Vitest
 tests/engine/   tests avec le vrai moteur
 tests/e2e/      tests Playwright (dont un faux moteur UCI scripté)

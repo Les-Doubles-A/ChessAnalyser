@@ -8,6 +8,9 @@
   "scripts": {
     "engine": "node scripts/copy-engine.mjs",
     "openings": "node scripts/build-openings.ts",
+    "dataset:collect": "node --import ./scripts/ts-hooks.mjs scripts/collect-games.ts",
+    "dataset:analyse": "node --import ./scripts/ts-hooks.mjs scripts/analyse-dataset.ts",
+    "dataset:split": "node --import ./scripts/ts-hooks.mjs scripts/split-dataset.ts",
     "predev": "npm run engine",
     "dev": "vite",
     "prebuild": "npm run engine",
