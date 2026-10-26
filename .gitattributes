@@ -1,0 +1,2 @@
+# Fins de ligne LF partout, comme l'attend Prettier, même avec core.autocrlf sous Windows.
+* text=auto eol=lf
