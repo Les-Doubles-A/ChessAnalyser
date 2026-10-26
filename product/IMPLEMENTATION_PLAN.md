@@ -218,6 +218,15 @@
 - **Couvre** : F3, AC-F3-5, AC-X-2, AC-X-3
 - **Statut** : à faire
 
+### T13 : Variantes (F10 avancée à la demande de l'utilisateur)
+
+- **Objectif** : jouer d'autres coups que ceux de la partie et voir ce que le moteur en pense.
+- **Fichiers ou composants** : `src/chess/variation.ts`, `src/ui/Variation.tsx`, `src/ui/useVariationEvals.ts`, `src/ui/Board.tsx`, `src/ui/MovePanel.tsx`, `src/ui/AnalysisView.tsx`, `tests/unit/variation.test.ts`, `tests/e2e/variation.spec.ts`.
+- **Comportement** : bouton « Explorer des variantes » qui rend l'échiquier jouable (glisser-déposer, ou clic sur la pièce puis sur la case) et affiche une saisie au clavier (notation anglaise `Nf3`, française `Cf3` ou par cases `g1f3`). Le coup réellement joué fait avancer dans la partie ; tout autre coup ouvre une variante depuis la position affichée, ou remplace la suite de la variante à partir du coup affiché. Bouton « Essayer <meilleur coup> » sur les imprécisions, erreurs et gaffes. Chaque position de la variante est évaluée avec le moteur partagé, au préréglage de la partie ; panneau de variante avec coups classés, évaluation, suite du moteur en notation algébrique, flèche du coup conseillé, bouton « Coup du moteur » et « Revenir à la partie ». Flèches et Précédent/Suivant parcourent la variante, Échap revient à la partie.
+- **Garde-fou R8** : une variante part toujours d'une position d'une partie terminée des archives ; aucune saisie libre de position.
+- **Limites** : une seule variante à la fois (pas d'arbre) ; promotion en dame au glisser-déposer (autre pièce par la saisie, `a8=N`) ; une seule ligne du moteur (pas de multi-lignes).
+- **Statut** : fait (2026-10-26). Preuve : `tests/unit/variation.test.ts` (11 tests) ; `tests/e2e/variation.spec.ts` (5 tests, Chromium et Firefox : essayer le meilleur coup, saisie française, coup refusé, navigation et Échap, coup du moteur et flèche, clic puis case et glisser-déposer, échiquier inerte hors exploration) ; suite complète verte (91 tests unitaires, 84 Playwright) ; captures vérifiées à 1280 et 360 px.
+
 ## 5. Peut attendre
 
 | Élément | Pourquoi attendre | Déclencheur |

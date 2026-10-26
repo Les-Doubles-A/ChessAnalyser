@@ -7,7 +7,7 @@ import { createWorkerEngine } from '../engine/worker-engine';
 let shared: Engine | undefined;
 
 /** Un seul moteur pour toute la session ; recréé après une erreur fatale. */
-function getEngine(): Engine {
+export function getEngine(): Engine {
   shared ??= createWorkerEngine();
   return shared;
 }

@@ -615,6 +615,76 @@ button.game-row:hover {
   margin: 0.5rem 0;
 }
 
+/* Variantes */
+.explore-toggle {
+  margin-top: 0.25rem;
+}
+
+.explore-toggle[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.explore-bar {
+  margin-top: 0.6rem;
+}
+
+.explore-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.explore-form input {
+  width: 7rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.explore-bar .hint,
+.explore-bar .status {
+  margin: 0.3rem 0 0;
+}
+
+.board.is-playable {
+  cursor: pointer;
+}
+
+.variation {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.variation h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.variation-moves {
+  list-style: none;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+}
+
+.variation-eval {
+  margin: 0.3rem 0 0.5rem;
+}
+
+.try-best {
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.6rem;
+}
+
 /* Synthèse */
 .summary {
   margin: 0.75rem 0;
