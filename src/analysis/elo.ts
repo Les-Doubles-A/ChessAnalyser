@@ -18,9 +18,26 @@ export interface PlayerFeatures {
   inaccuracyRate: number;
   mistakeRate: number;
   blunderRate: number;
+  /** Perte moyenne sur les coups joués en position encore disputée (Win% de 20 à 80). */
+  balancedLoss: number;
+  /** Part des coups joués en position disputée. */
+  balancedShare: number;
+  /** Perte moyenne en centipions (bornée à 500 par coup), plus sensible au haut niveau. */
+  centipawnLoss: number;
+  /** Part des coups classés Meilleur ou Excellent. */
+  goodMoveRate: number;
   /** Coups hors livre du joueur. */
   moves: number;
 }
+
+/** Win% vers centipions (inverse de la formule Lichess), Win% borné à [1, 99]. */
+function toCentipawns(win: number): number {
+  const w = Math.min(99, Math.max(1, win));
+  return Math.log(w / (100 - w)) / 0.00368208;
+}
+
+/** Perte moyenne par défaut quand aucun coup n'a été joué en position disputée. */
+const NO_BALANCED_LOSS = 10;
 
 /** Variables d'un joueur ; null si l'analyse est incomplète ou la précision indisponible. */
 export function playerFeatures(report: GameReport, color: 'w' | 'b'): PlayerFeatures | null {
@@ -31,14 +48,28 @@ export function playerFeatures(report: GameReport, color: 'w' | 'b'): PlayerFeat
     (m): m is MoveAnalysis => m !== undefined && m.color === color && m.category !== 'book',
   );
   const n = own.length;
-  const rate = (category: MoveAnalysis['category']) =>
-    n ? own.filter((m) => m.category === category).length / n : 0;
+  const mean = (values: number[], empty = 0) =>
+    values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : empty;
+  const rate = (...categories: MoveAnalysis['category'][]) =>
+    n ? own.filter((m) => categories.includes(m.category)).length / n : 0;
+  const balanced = own.filter((m) => m.winBefore >= 20 && m.winBefore <= 80);
   return {
     accuracy,
-    meanLoss: n ? own.reduce((sum, m) => sum + m.loss, 0) / n : 0,
+    meanLoss: mean(own.map((m) => m.loss)),
     inaccuracyRate: rate('inaccuracy'),
     mistakeRate: rate('mistake'),
     blunderRate: rate('blunder'),
+    balancedLoss: mean(
+      balanced.map((m) => m.loss),
+      NO_BALANCED_LOSS,
+    ),
+    balancedShare: n ? balanced.length / n : 0,
+    centipawnLoss: mean(
+      own.map((m) =>
+        Math.min(500, Math.max(0, toCentipawns(m.winBefore) - toCentipawns(m.winAfter))),
+      ),
+    ),
+    goodMoveRate: rate('best', 'excellent'),
     moves: n,
   };
 }
@@ -52,6 +83,11 @@ export const FEATURE_NAMES = [
   'tauxImprecisions',
   'tauxErreurs',
   'tauxGaffes',
+  'logPertePositionDisputee',
+  'partPositionsDisputees',
+  'logPerteCentipions',
+  'tauxBonsCoups',
+  'logCoups',
   'bullet',
   'rapide',
   'daily',
@@ -67,6 +103,11 @@ export function featureVector(f: PlayerFeatures, timeClass: TimeClass | 'unknown
     f.inaccuracyRate,
     f.mistakeRate,
     f.blunderRate,
+    Math.log1p(f.balancedLoss),
+    f.balancedShare,
+    Math.log1p(f.centipawnLoss),
+    f.goodMoveRate,
+    Math.log(Math.max(1, f.moves)),
     timeClass === 'bullet' ? 1 : 0,
     timeClass === 'rapid' ? 1 : 0,
     timeClass === 'daily' ? 1 : 0,

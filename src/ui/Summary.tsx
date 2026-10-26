@@ -35,7 +35,12 @@ function eloText(estimate: EloEstimate | null): string {
   if (!estimate) return 'Disponible quand l’analyse est complète';
   if (estimate.kind === 'too-short') return 'Partie trop courte pour estimer le niveau';
   if (estimate.kind === 'unavailable') return 'Estimation non calibrée pour ce préréglage';
-  return `Niveau estimé sur cette partie : ≈ ${estimate.value} (${estimate.low} à ${estimate.high}), confiance ${estimate.confidence}`;
+  const { value, low, high, confidence } = estimate;
+  // Repli de H7 : quand l'intervalle est large, la fourchette passe avant le chiffre central.
+  if (confidence === 'faible') {
+    return `Niveau estimé sur cette partie : entre ${low} et ${high} (≈ ${value}), confiance faible`;
+  }
+  return `Niveau estimé sur cette partie : ≈ ${value} (${low} à ${high}), confiance ${confidence}`;
 }
 
 export function Summary({

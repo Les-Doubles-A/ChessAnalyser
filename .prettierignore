@@ -7,3 +7,4 @@ package-lock.json
 LICENSE
 public/engine
 src/data
+docs/elo-validation-*.md

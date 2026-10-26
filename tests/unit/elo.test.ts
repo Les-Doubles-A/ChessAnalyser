@@ -24,6 +24,10 @@ const features = (overrides: Partial<PlayerFeatures> = {}): PlayerFeatures => ({
   inaccuracyRate: 0.1,
   mistakeRate: 0.05,
   blunderRate: 0.02,
+  balancedLoss: 3,
+  balancedShare: 0.7,
+  centipawnLoss: 40,
+  goodMoveRate: 0.5,
   moves: 25,
   ...overrides,
 });
@@ -59,8 +63,14 @@ describe('variables du modèle Elo (F6)', () => {
     expect(black.moves).toBe(16);
     expect(white.accuracy).toBe(report.accuracy.white);
     for (const f of [white, black]) {
-      expect(f.inaccuracyRate + f.mistakeRate + f.blunderRate).toBeLessThanOrEqual(1);
+      expect(f.inaccuracyRate + f.mistakeRate + f.blunderRate + f.goodMoveRate).toBeLessThanOrEqual(
+        1,
+      );
       expect(f.meanLoss).toBeGreaterThanOrEqual(0);
+      expect(f.balancedShare).toBeGreaterThan(0);
+      expect(f.balancedShare).toBeLessThanOrEqual(1);
+      expect(f.centipawnLoss).toBeGreaterThanOrEqual(0);
+      expect(f.centipawnLoss).toBeLessThanOrEqual(500);
     }
   });
 
@@ -76,8 +86,10 @@ describe('variables du modèle Elo (F6)', () => {
     expect(x[0]).toBe(1);
     expect(x[1]).toBeCloseTo(0.8, 10);
     expect(x[2]).toBeCloseTo(0.64, 10);
-    expect(x.slice(7)).toEqual([0, 1, 0]);
-    expect(featureVector(features(), 'blitz').slice(7)).toEqual([0, 0, 0]);
+    expect(x[FEATURE_NAMES.indexOf('tauxBonsCoups')]).toBe(0.5);
+    expect(x[FEATURE_NAMES.indexOf('logCoups')]).toBeCloseTo(Math.log(25), 10);
+    expect(x.slice(-3)).toEqual([0, 1, 0]);
+    expect(featureVector(features(), 'blitz').slice(-3)).toEqual([0, 0, 0]);
   });
 });
 

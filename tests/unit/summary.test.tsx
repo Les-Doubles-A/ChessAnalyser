@@ -60,6 +60,30 @@ describe('niveau joué dans la synthèse (F6)', () => {
     );
   });
 
+  it('repli H7 : fourchette en premier quand la confiance est faible', () => {
+    const wide: EloModel = {
+      ...eloModel,
+      presets: { standard: { ...eloModel.presets.standard!, lower: -700, upper: 700 } },
+    };
+    render(
+      <Summary
+        game={game}
+        report={buildReport(game, evals)}
+        url="https://www.chess.com/game/live/1"
+        pending={false}
+        onSelect={() => undefined}
+        white={{ username: 'morphy_fan', rating: 1650, result: 'win' }}
+        black={{ username: 'Testeur', rating: 1580, result: 'checkmated' }}
+        timeClass="rapid"
+        preset="standard"
+        eloModel={wide}
+      />,
+    );
+    expect(screen.getByText(/^Blancs, morphy_fan/).closest('li')!.textContent).toContain(
+      'Niveau estimé sur cette partie : entre 800 et 2200 (≈ 1500), confiance faible',
+    );
+  });
+
   it('AC-F6-3 : rien d’estimé si l’analyse est incomplète', () => {
     renderSummary(buildReport(game, evals.slice(0, 5)));
     const items = screen.getAllByText(/Disponible quand l’analyse est complète/);
