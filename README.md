@@ -1,5 +1,7 @@
 # ChessAnalyser
 
+Dépôt GitHub : **https://github.com/Les-Doubles-A/ChessAnalyser**
+
 Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, on choisit une partie, puis Stockfish analyse chaque position. Le site affiche la barre et la courbe d'évaluation, la classification de chaque coup, le meilleur coup et la précision des deux joueurs. La synthèse et l'estimation d'Elo arrivent dans la tranche suivante (voir `product/IMPLEMENTATION_PLAN.md`).
 
 Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs. Le calcul se fait entièrement dans le navigateur.
@@ -64,3 +66,16 @@ product/        cadrage : brief, critères d'acceptation, architecture, plan, ri
 ## Licence
 
 GPL-3.0-or-later (voir `LICENSE`). Ce choix est imposé par Stockfish (GPL-3.0), embarqué dans le site ; sa licence est copiée dans `public/engine/COPYING-stockfish.txt`. La base d'ouvertures vient de lichess-org/chess-openings (CC0-1.0). La formule de précision reprend l'algorithme publié par Lichess.
+
+<!-- installeur-release -->
+## Installation
+
+Téléchargez **`ChessAnalyser-Setup-0.1.0.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
+
+L'application s'installe pour l'utilisateur courant (sans droits administrateur). Le raccourci du menu Démarrer lance un petit serveur local (http://localhost:51730) et ouvre le navigateur ; le serveur s'arrête seul après 15 minutes sans activité.
+
+L'installeur n'est pas signé : si Windows SmartScreen l'affiche, cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
+
+### Recréer l'installeur
+
+Compiler l'application (`npm run build`), puis lancer [Inno Setup 6](https://jrsoftware.org/isinfo.php) : `iscc installer\ChessAnalyser.iss`. Le setup est créé dans `installer\Output\`.
