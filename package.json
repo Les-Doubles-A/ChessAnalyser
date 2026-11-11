@@ -1,7 +1,7 @@
 {
   "name": "chessanalyser",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Analyse de parties chess.com dans le navigateur avec Stockfish",
   "license": "GPL-3.0-or-later",
   "type": "module",

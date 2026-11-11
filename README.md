@@ -70,7 +70,7 @@ GPL-3.0-or-later (voir `LICENSE`). Ce choix est imposé par Stockfish (GPL-3.0),
 <!-- installeur-release -->
 ## Installation
 
-Téléchargez **`ChessAnalyser-Setup-0.1.0.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
+Téléchargez **`ChessAnalyser-Setup-0.1.1.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
 
 L'application s'installe pour l'utilisateur courant (sans droits administrateur). Le raccourci du menu Démarrer lance un petit serveur local (http://localhost:51730) et ouvre le navigateur ; le serveur s'arrête seul après 15 minutes sans activité.
 
