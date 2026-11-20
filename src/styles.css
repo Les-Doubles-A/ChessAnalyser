@@ -12,6 +12,15 @@
   --loss: #b42318;
   --draw: #59636e;
   --current: #f0be46;
+  /* Catégories de coups : palette propre au projet */
+  --cat-book: #8a6d4b;
+  --cat-forced: #6f7680;
+  --cat-best: #1f6fb2;
+  --cat-excellent: #2f8a5b;
+  --cat-good: #5f7f72;
+  --cat-inaccuracy: #a8860f;
+  --cat-mistake: #c3611c;
+  --cat-blunder: #b42318;
   color-scheme: light;
 }
 
@@ -30,6 +39,14 @@
     --loss: #ff8a80;
     --draw: #a3acb6;
     --current: #8a6d1f;
+    --cat-book: #c9a57d;
+    --cat-forced: #a3acb6;
+    --cat-best: #7fb0e0;
+    --cat-excellent: #6fd28f;
+    --cat-good: #9cc3b3;
+    --cat-inaccuracy: #e6c34d;
+    --cat-mistake: #ff9d5c;
+    --cat-blunder: #ff8a80;
     color-scheme: dark;
   }
 }
@@ -363,6 +380,7 @@ button.game-row:hover {
 }
 
 .move-list {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0.5rem;
@@ -396,31 +414,6 @@ button.game-row:hover {
 .move[aria-current='step'] {
   background: var(--current);
   font-weight: 600;
-}
-
-/* Catégories de coups : palette propre au projet */
-:root {
-  --cat-book: #8a6d4b;
-  --cat-forced: #6f7680;
-  --cat-best: #1f6fb2;
-  --cat-excellent: #2f8a5b;
-  --cat-good: #5f7f72;
-  --cat-inaccuracy: #a8860f;
-  --cat-mistake: #c3611c;
-  --cat-blunder: #b42318;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --cat-book: #c9a57d;
-    --cat-forced: #a3acb6;
-    --cat-best: #7fb0e0;
-    --cat-excellent: #6fd28f;
-    --cat-good: #9cc3b3;
-    --cat-inaccuracy: #e6c34d;
-    --cat-mistake: #ff9d5c;
-    --cat-blunder: #ff8a80;
-  }
 }
 
 .cat-book {
@@ -804,8 +797,4 @@ button.game-row:hover {
 .move[aria-current='step'],
 .move[aria-current='step'] .move-symbol {
   color: var(--text);
-}
-
-.move-list {
-  position: relative;
 }

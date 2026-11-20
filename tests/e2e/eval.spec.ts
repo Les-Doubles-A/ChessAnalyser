@@ -153,6 +153,11 @@ test.describe('Barre et courbe d’évaluation (F4)', () => {
     const box = (await svg.boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.5, box.y + 10);
     await expect(indicator(page)).toHaveText('Demi-coup 2 sur 4');
+    // Les marges latérales mènent aux extrémités de la partie.
+    await page.mouse.click(box.x + box.width - 1, box.y + 10);
+    await expect(indicator(page)).toHaveText('Demi-coup 4 sur 4');
+    await page.mouse.click(box.x + 1, box.y + 10);
+    await expect(indicator(page)).toHaveText('Position de départ');
   });
 
   test('AC-F4-5 : libellé de la courbe et symboles des marqueurs', async ({ page }) => {
