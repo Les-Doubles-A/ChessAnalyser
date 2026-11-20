@@ -135,10 +135,10 @@
 Le MVP est validé quand :
 
 - [ ] tous les critères d'acceptation MVP sont vérifiés (tableau de la section 4) ;
-- [ ] `npm run test:all` passe sans échec ;
+- [x] `npm run test:all` passe sans échec ;
 - [ ] les scénarios M1 à M5 ont été exécutés dans Chrome et Firefox, résultats consignés dans `docs/validation.md` ;
-- [ ] AC-F6-4 passe, ou le repli de H7 est appliqué et documenté ;
-- [ ] H5 tranchée (taux d'accord consigné) ;
+- [x] AC-F6-4 passe, ou le repli de H7 est appliqué et documenté ;
+- [x] H5 tranchée (taux d'accord consigné : 80,8 %, sous le seuil de 90 %, voir `docs/validation.md`) ;
 - [ ] 3 testeurs sur 5 au moins déclarent qu'ils réutiliseraient l'outil.
 
 ## 7. Après le lancement

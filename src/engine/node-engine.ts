@@ -9,10 +9,16 @@ interface NodeStockfish {
   terminate?: () => void;
 }
 
-export function createNodeEngine(): UciEngine {
+/**
+ * Variante « lite-single » par défaut, celle du site. « single » (réseau NNUE complet,
+ * wasm de 99 Mo) ne sert qu'à mesurer l'écart avec le moteur du site (H5).
+ */
+export type NodeFlavor = 'lite-single' | 'single';
+
+export function createNodeEngine(flavor: NodeFlavor = 'lite-single'): UciEngine {
   const require = createRequire(import.meta.url);
   const load = require('stockfish') as (flavor: string) => NodeStockfish;
-  const engine = load('lite-single');
+  const engine = load(flavor);
   const transport: UciTransport = {
     send: (command) => engine.processCommand(command),
     listen: (onLine) => {

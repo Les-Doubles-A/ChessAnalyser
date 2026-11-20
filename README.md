@@ -6,7 +6,7 @@ Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, o
 
 Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs (le build impose une CSP qui n'autorise que le site et `api.chess.com`). Le calcul se fait entièrement dans le navigateur.
 
-État : version 0.1.1 publiée ; la validation complète du MVP (T12 de `product/IMPLEMENTATION_PLAN.md` : performances et accessibilité vérifiées à la main, rapport `docs/validation.md`) reste à faire.
+État : version 0.1.1 publiée. Validation du MVP (T12) en partie faite, voir `docs/validation.md` : durées et confidentialité vérifiées ; restent le lecteur d'écran et le test avec des joueurs. Le moteur allégé n'atteint pas l'accord de 90 % visé avec le moteur complet sur les gaffes (80,8 %).
 
 ## Prérequis
 
@@ -30,6 +30,7 @@ npx playwright install chromium firefox   # navigateurs des tests de bout en bou
 | `npm run test:e2e`       | Tests de bout en bout (Playwright, Chromium et Firefox, API chess.com simulée)          |
 | `npm run test:e2e:build` | Mêmes tests de bout en bout sur le site construit (CSP active)                          |
 | `npm run test:all`       | Types, lint, tests unitaires, moteur et bout en bout (développement et build)           |
+| `npm run smoke:real`     | Parcours réels contre la vraie API chess.com et le vrai moteur (accès Internet requis)  |
 | `npm run engine`         | Copie `stockfish-19-lite-single` (.js et .wasm) de `node_modules` vers `public/engine/` |
 | `npm run openings`       | Régénère `src/data/openings.json` depuis lichess-org/chess-openings (CC0)               |
 | `npm run lint`           | ESLint                                                                                  |
@@ -48,6 +49,8 @@ Trois scripts Node préparent, dans `data/` (exclu de git, jamais publié), les 
 La collecte annonce un contact dans son User-Agent, comme le demande l'API : définir la variable d'environnement `CHESSANALYSER_CONTACT` (une adresse e-mail par exemple), sinon l'adresse du dépôt est utilisée. Les parties dont l'analyse a échoué sont retentées au lancement suivant de `dataset:analyse`.
 
 Ensuite, `npm run elo:calibrate` ajuste le modèle sur `data/calibration.jsonl` et l'écrit dans `src/data/elo-model.json` (versionné, embarqué dans le site) ; `npm run elo:validate` le contrôle sur les joueurs de `data/validation.jsonl` et écrit `docs/elo-validation-<préréglage>.md` (statistiques agrégées seulement). Les deux acceptent `-- --preset deep`.
+
+Deux mesures de T12 utilisent aussi ce jeu local : `npm run measure:timing` chronomètre l'analyse de 5 parties d'environ 40 coups dans Chromium et Firefox (vrai moteur, site construit), et `npm run h5:compare -- [--games 50]` compare les gaffes du moteur du site à celles du moteur complet, puis écrit `docs/h5-moteurs.md`. Résultats dans `docs/validation.md`.
 
 Seuls sont conservés les classements, la cadence, les coups et des pseudonymes (HMAC avec une clé locale `data/secret.txt`). La file d'attente de la collecte (`data/collect-state.json`) contient des pseudos en clair ; elle est supprimée quand les quotas sont atteints.
 

@@ -146,6 +146,9 @@ test.describe('Barre et courbe d’évaluation (F4)', () => {
     await expect(indicator(page)).toHaveText('Demi-coup 3 sur 4');
     await expect(bar(page)).toContainText('-M3');
     expect(await whiteHeight(page)).toBe(0);
+    // Le libellé tient dans la barre (elle rogne ce qui dépasse).
+    const label = page.locator('.eval-label');
+    expect(await label.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   });
 
   test('AC-F4-3 : un clic sur la courbe déplace l’échiquier', async ({ page }) => {

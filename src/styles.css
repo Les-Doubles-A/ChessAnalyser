@@ -468,7 +468,7 @@ button.game-row:hover {
 
 .eval-bar {
   position: relative;
-  flex: 0 0 1.6rem;
+  flex: 0 0 1.75rem;
   background: #2b2f35;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -493,13 +493,16 @@ button.game-row:hover {
   align-items: center;
 }
 
+/* « +4.8 » ou « -M12 » doivent tenir dans la barre, qui rogne ce qui dépasse. */
 .eval-label {
   position: absolute;
   left: 0;
   right: 0;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
+  letter-spacing: -0.04em;
   text-align: center;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
