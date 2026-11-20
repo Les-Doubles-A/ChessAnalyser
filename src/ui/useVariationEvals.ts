@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { terminalEval } from '../analysis/runAnalysis';
 import { isAbortError, type Engine, type PositionEval } from '../engine/types';
 import { getEngine, releaseFailedEngine } from './useAnalysis';
@@ -60,8 +60,10 @@ export function useVariationEvals(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, current, depth]);
 
-  return {
-    evals: fens.map((fen) => known.get(fen) ?? cache.get(cacheKey(depth, fen))),
-    error: error?.request === request ? error.message : undefined,
-  };
+  // Tableau stable tant que rien ne change : le rapport de la variante peut être mémoïsé.
+  const evals = useMemo(
+    () => fens.map((fen) => known.get(fen) ?? cache.get(cacheKey(depth, fen))),
+    [fens, known, cache, depth],
+  );
+  return { evals, error: error?.request === request ? error.message : undefined };
 }

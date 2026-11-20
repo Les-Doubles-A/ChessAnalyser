@@ -198,7 +198,21 @@ h1 {
   gap: 0.4rem;
 }
 
-.filter select {
+.search .preset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.preset select {
+  max-width: 100%;
+  font-weight: normal;
+}
+
+.filter select,
+.preset select {
   padding: 0.3rem;
   border-radius: 6px;
   border: 1px solid var(--border);

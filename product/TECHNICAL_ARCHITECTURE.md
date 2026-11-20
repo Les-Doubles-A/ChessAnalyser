@@ -71,7 +71,7 @@ Toutes les données vivent en mémoire pendant la session, sauf mention contrair
 - `elo-model.json` (implémenté) : `features` (les 15 variables de `FEATURE_NAMES` dans `src/analysis/elo.ts`, cadence en indicatrices avec le blitz pour référence) et `presets.<préréglage>` : `coefficients`, `lower` et `upper` (quantiles 10 % et 90 % des résidus), `samples`, `depth`, `engine`. Seul `standard` est calibré ; en profonde, l'estimation est indiquée comme non calibrée. Un test vérifie l'accord entre `features` et le code.
 - `openings.json` : `names` (EPD vers `[eco, nom]`, 3865 positions) et `book` (4117 positions intermédiaires des lignes connues, sans nom propre), soit 723 Ko bruts et 93 Ko compressés, chargés à la demande dans un fichier séparé (T6).
 - Score moteur (T5) : `{ cp }` ou `{ mate, winner }` du point de vue des blancs ; `mate: 0` pour une position déjà matée, évaluée sans moteur.
-- `localStorage`, clé `chessanalyser:v1` : `{ lastUsername }`, écrit seulement quand le joueur existe. **[Écart]** Le préréglage prévu à l'origine n'est ni choisi en E1 ni mémorisé : toute analyse démarre en Standard, la profonde se lance depuis E3.
+- `localStorage`, clé `chessanalyser:v1` : `{ lastUsername, preset }`. Le pseudo n'est écrit qu'une fois le joueur trouvé ; le préréglage, choisi en E1, sert à la première analyse de chaque partie.
 - Jeu de calibration : fichiers locaux dans `data/` (exclu de git), jamais publiés.
 
 Volume : une partie fait au plus quelques centaines de positions ; rien ne dépasse quelques Mo en mémoire.

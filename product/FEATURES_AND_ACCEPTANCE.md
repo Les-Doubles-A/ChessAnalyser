@@ -56,7 +56,7 @@
 
 | ID | Écran / surface | Rôle | État vide | Chargement | Erreur | Succès |
 |---|---|---|---|---|---|---|
-| E1 | Accueil et recherche | Saisir le pseudo, choisir le préréglage (**[Écart]** non livré : l'analyse démarre en Standard, la profonde se lance en E3) | Champ vide, exemple de pseudo en aide | Bouton désactivé, indicateur « Recherche… » | Message sous le champ, focus remis dans le champ | Passage à E2 |
+| E1 | Accueil et recherche | Saisir le pseudo, choisir le préréglage (mémorisé ; la profonde peut aussi se lancer en E3) | Champ vide, exemple de pseudo en aide | Bouton désactivé, indicateur « Recherche… » | Message sous le champ, focus remis dans le champ | Passage à E2 |
 | E2 | Liste des parties | Choisir une partie, filtrer par cadence, mois précédent | « Aucune partie publique trouvée » | Squelette de liste | Message et bouton « Réessayer » | Liste triée |
 | E3 | Vue d'analyse | Échiquier, barre, courbe, liste des coups, panneau du coup courant | Sans objet (toujours une partie) | Progression « Analyse : 34 / 81 positions », bouton « Annuler » | Moteur indisponible : message, navigation conservée | Toutes les positions évaluées |
 | E4 | Panneau de synthèse (dans E3) | Précision, compteurs, Elo, ouverture, moments clés | « Disponible à la fin de l'analyse » | Idem | « Analyse incomplète : synthèse partielle » | Synthèse complète |
@@ -187,7 +187,7 @@
 | Permission ou donnée | Pourquoi elle est nécessaire | Alternative plus faible envisagée | Ce qui se passe si elle est refusée |
 |---|---|---|---|
 | Accès réseau à `api.chess.com` | Lire les parties publiques | Import PGN (F8, V2) | Message d'erreur F1 ; en V2, import PGN |
-| `localStorage` : dernier pseudo et préréglage (**[Écart]** seul le pseudo est mémorisé) | Éviter de ressaisir | Aucun stockage | Navigation privée : rien n'est mémorisé, tout fonctionne |
+| `localStorage` : dernier pseudo et préréglage | Éviter de ressaisir | Aucun stockage | Navigation privée : rien n'est mémorisé, tout fonctionne |
 | Pseudo saisi | Donnée publique sur chess.com, envoyée seulement à chess.com | Sans objet | Sans objet |
 
 Aucune autre permission du navigateur. Aucune donnée n'est envoyée à un serveur du projet (il n'y en a pas).

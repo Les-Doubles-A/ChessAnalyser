@@ -42,11 +42,14 @@ export interface AnalysisState {
   error?: string;
 }
 
-export function useAnalysis(game: ParsedGame) {
+/** @param initialPreset Préréglage de la première analyse, lancée dès l'ouverture de la partie. */
+export function useAnalysis(game: ParsedGame, initialPreset: Preset = 'standard') {
   const total = game.plies.length + 1;
+  // Seule la valeur à l'ouverture compte : la changer ensuite ne relance pas l'analyse.
+  const initialRef = useRef(initialPreset);
   const [state, setState] = useState<AnalysisState>(() => ({
     status: 'running',
-    preset: 'standard',
+    preset: initialPreset,
     shownPreset: null,
     evals: [],
     done: 0,
@@ -111,7 +114,7 @@ export function useAnalysis(game: ParsedGame) {
 
   useEffect(() => {
     completeRef.current = null;
-    void start('standard');
+    void start(initialRef.current);
     return () => controllerRef.current?.abort();
   }, [start]);
 

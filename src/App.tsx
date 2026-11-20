@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import type { Preset } from './analysis/runAnalysis';
 import { ChessComClient, ChessComError, validateUsername, type GameSummary } from './api/chesscom';
 import { loadPrefs, savePrefs } from './storage';
 import { AnalysisView } from './ui/AnalysisView';
@@ -27,6 +28,11 @@ const UNAVAILABLE = 'chess.com ne répond pas.';
 
 export function App() {
   const [query, setQuery] = useState(() => loadPrefs().lastUsername ?? '');
+  const [preset, setPreset] = useState<Preset>(() => loadPrefs().preset ?? 'standard');
+  const choosePreset = (value: Preset) => {
+    setPreset(value);
+    savePrefs({ preset: value });
+  };
   const [formError, setFormError] = useState<string>();
   const [list, setList] = useState<ListState>({ status: 'idle' });
   const [selected, setSelected] = useState<{ game: GameSummary; username: string }>();
@@ -110,6 +116,7 @@ export function App() {
         <AnalysisView
           game={selected.game}
           username={selected.username}
+          preset={preset}
           onBack={() => setSelected(undefined)}
         />
       </Layout>
@@ -122,6 +129,8 @@ export function App() {
         ref={inputRef}
         value={query}
         onChange={setQuery}
+        preset={preset}
+        onPresetChange={choosePreset}
         error={formError}
         busy={list.status === 'loading'}
         onSubmit={search}

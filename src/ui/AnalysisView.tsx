@@ -3,7 +3,7 @@ import type { GameSummary } from '../api/chesscom';
 import { isError } from '../analysis/classify';
 import { loadOpeningIndex, type OpeningIndex } from '../analysis/openings';
 import { buildReport, uciToSan } from '../analysis/report';
-import { PRESET_DEPTH } from '../analysis/runAnalysis';
+import { PRESET_DEPTH, type Preset } from '../analysis/runAnalysis';
 import { parseGame, type ParsedGame } from '../chess/game';
 import {
   currentFen,
@@ -32,6 +32,8 @@ import { useVariationEvals } from './useVariationEvals';
 interface Props {
   game: GameSummary;
   username: string;
+  /** Préréglage de la première analyse, choisi sur l'écran de recherche. */
+  preset: Preset;
   onBack: () => void;
 }
 
@@ -51,7 +53,7 @@ function tryParse(pgn: string): ParsedGame | null {
   }
 }
 
-export function AnalysisView({ game, username, onBack }: Props) {
+export function AnalysisView({ game, username, preset, onBack }: Props) {
   const parsed = useMemo(() => tryParse(game.pgn), [game.pgn]);
   const view = perspective(game, username);
 
@@ -82,7 +84,13 @@ export function AnalysisView({ game, username, onBack }: Props) {
           {OUTCOME_LABELS[view.outcome]} pour {view.me.username}
         </p>
       </div>
-      <Replay key={game.url} parsed={parsed} game={game} orientation={view.color} />
+      <Replay
+        key={game.url}
+        parsed={parsed}
+        game={game}
+        orientation={view.color}
+        initialPreset={preset}
+      />
     </section>
   );
 }
@@ -91,10 +99,12 @@ function Replay({
   parsed,
   game,
   orientation,
+  initialPreset,
 }: {
   parsed: ParsedGame;
   game: GameSummary;
   orientation: 'white' | 'black';
+  initialPreset: Preset;
 }) {
   const last = parsed.plies.length;
   const [nav, setNav] = useState<ExploreState>({ position: 0, variation: null, cursor: 0 });
@@ -138,7 +148,7 @@ function Replay({
     return () => document.removeEventListener('keydown', onKey);
   }, [last]);
 
-  const { state, start, cancel } = useAnalysis(parsed);
+  const { state, start, cancel } = useAnalysis(parsed, initialPreset);
   const [openings, setOpenings] = useState<OpeningIndex>();
   useEffect(() => {
     let alive = true;
@@ -154,8 +164,11 @@ function Replay({
     [parsed, state.evals, openings],
   );
 
+  // Préréglage des évaluations affichées : la dernière analyse complète, sinon celle en
+  // cours (ses résultats partiels s'affichent tant qu'aucune n'est complète).
+  const evalsPreset = state.shownPreset ?? state.preset;
   // Variante : évaluée au même préréglage que la partie affichée.
-  const depth = PRESET_DEPTH[state.shownPreset ?? 'standard'];
+  const depth = PRESET_DEPTH[evalsPreset];
   const known = useMemo(
     () =>
       new Map(state.evals.filter((e): e is PositionEval => e !== undefined).map((e) => [e.fen, e])),
@@ -171,9 +184,10 @@ function Replay({
     depth,
     known,
   );
-  const variationMoves = variation
-    ? buildReport(variationGame(variation), variationEvals).moves
-    : [];
+  const variationMoves = useMemo(
+    () => (variation ? buildReport(variationGame(variation), variationEvals).moves : []),
+    [variation, variationEvals],
+  );
 
   const fen = currentFen(parsed, nav);
   const shownEval = variation ? variationEvals[cursor] : state.evals[position];
@@ -369,7 +383,7 @@ function Replay({
           white={game.white}
           black={game.black}
           timeClass={game.timeClass}
-          preset={state.shownPreset ?? 'standard'}
+          preset={evalsPreset}
         />
         <MoveList plies={parsed.plies} moves={report.moves} position={shown} onSelect={go} />
       </div>

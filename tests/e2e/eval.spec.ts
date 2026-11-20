@@ -97,6 +97,32 @@ test.describe('Analyse moteur (F3) avec un faux moteur', () => {
     await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +3.0');
     await expect(page.getByRole('button', { name: 'Analyse profonde' })).toHaveCount(0);
   });
+
+  test('E1 : préréglage choisi à l’accueil, mémorisé, et appliqué dès l’ouverture', async ({
+    page,
+  }) => {
+    const table = foolsMateTable(FOOLS_MATE_PGN);
+    const startFen = Object.keys(table)[0]!;
+    await mockEngine(page, table, {
+      deepTable: { [startFen]: { score: 'cp 300', best: 'e2e4' } },
+    });
+    await mockChessCom(page);
+    await page.goto('/');
+    const preset = page.getByLabel('Analyse');
+    await expect(preset).toHaveValue('standard');
+    await preset.selectOption('deep');
+    await page.reload();
+    await expect(page.getByLabel('Analyse')).toHaveValue('deep');
+
+    await searchFor(page, 'testeur');
+    await page.getByRole('button', { name: /pressé/ }).click();
+    await expect(page.getByText('Analyse terminée (profonde, profondeur 18).')).toBeVisible({
+      timeout: 15000,
+    });
+    // Aucune analyse Standard n'a eu lieu : l'évaluation affichée est celle de la profondeur 18.
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +3.0');
+    await expect(page.getByRole('button', { name: 'Analyse profonde' })).toHaveCount(0);
+  });
 });
 
 test.describe('Barre et courbe d’évaluation (F4)', () => {

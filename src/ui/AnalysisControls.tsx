@@ -52,7 +52,7 @@ export function AnalysisControls({ state, onCancel, onStart }: Props) {
             : `Analyse terminée (${PRESET_LABEL[shownPreset ?? preset]}, profondeur ${PRESET_DEPTH[shownPreset ?? preset]}).`}
       </p>
       {status === 'cancelled' && !shownPreset && (
-        <button type="button" onClick={() => onStart('standard')}>
+        <button type="button" onClick={() => onStart(preset)}>
           Relancer l’analyse
         </button>
       )}
