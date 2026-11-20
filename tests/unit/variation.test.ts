@@ -4,6 +4,7 @@ import {
   currentFen,
   currentPly,
   formatLine,
+  isPromotion,
   makePly,
   playMove,
   pvToSan,
@@ -114,5 +115,21 @@ describe('suite proposée par le moteur', () => {
   it('s’arrête au premier coup illisible et respecte la limite', () => {
     expect(pvToSan(START, ['e2e4', 'e2e4', 'g1f3'])).toEqual(['e4']);
     expect(pvToSan(START, ['e2e4', 'e7e5', 'g1f3', 'b8c6'], 2)).toEqual(['e4', 'e5']);
+  });
+});
+
+describe('promotions (corrections de l’audit)', () => {
+  const PROMOTE = '4k3/P7/8/8/8/8/8/4K3 w - - 0 1';
+
+  it('lit la pièce de promotion en notation française', () => {
+    expect(makePly(PROMOTE, 'a8=D', 1)?.san).toMatch(/^a8=Q/);
+    expect(makePly(PROMOTE, 'a8C', 1)?.san).toBe('a8=N');
+    expect(makePly(PROMOTE, 'a8=T', 1)?.san).toMatch(/^a8=R/);
+  });
+
+  it('isPromotion repère un déplacement qui demande une pièce', () => {
+    expect(isPromotion(PROMOTE, 'a7', 'a8')).toBe(true);
+    expect(isPromotion(START, 'e2', 'e4')).toBe(false);
+    expect(makePly(PROMOTE, { from: 'a7', to: 'a8', promotion: 'n' }, 1)?.san).toBe('a8=N');
   });
 });

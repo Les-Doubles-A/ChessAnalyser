@@ -8,6 +8,7 @@ import { parseGame, type ParsedGame } from '../chess/game';
 import {
   currentFen,
   currentPly,
+  isPromotion,
   playMove,
   stepBack,
   variationGame,
@@ -33,6 +34,13 @@ interface Props {
   username: string;
   onBack: () => void;
 }
+
+const PROMOTION_PIECES = [
+  ['q', 'Dame'],
+  ['r', 'Tour'],
+  ['b', 'Fou'],
+  ['n', 'Cavalier'],
+] as const;
 
 function tryParse(pgn: string): ParsedGame | null {
   try {
@@ -74,7 +82,7 @@ export function AnalysisView({ game, username, onBack }: Props) {
           {OUTCOME_LABELS[view.outcome]} pour {view.me.username}
         </p>
       </div>
-      <Replay parsed={parsed} game={game} orientation={view.color} />
+      <Replay key={game.url} parsed={parsed} game={game} orientation={view.color} />
     </section>
   );
 }
@@ -190,6 +198,20 @@ function Replay({
     setNav(next);
     return true;
   };
+  // Promotion à l'échiquier : la pièce est demandée avant de jouer le coup. Le choix ne
+  // survit pas à un changement de position.
+  const [promotion, setPromotion] = useState<{ fen: string; from: string; to: string } | null>(
+    null,
+  );
+  const pendingPromotion = exploring && promotion?.fen === fen ? promotion : null;
+  const playOnBoard = (from: string, to: string) => {
+    if (isPromotion(fen, from, to)) {
+      setPromotion({ fen, from, to });
+      return false;
+    }
+    setPromotion(null);
+    return play({ from, to });
+  };
   // Remplace le coup affiché par le meilleur coup du moteur, dans une variante.
   const tryBest = () => {
     const best = panel.analysis?.bestMoveUci;
@@ -232,12 +254,31 @@ function Replay({
             orientation={orientation}
             lastMove={currentPly(parsed, nav)}
             arrows={arrows}
-            onMove={exploring ? (from, to) => play({ from, to }) : undefined}
+            onMove={exploring ? playOnBoard : undefined}
           />
         </div>
+        {pendingPromotion && (
+          <div className="promotion" role="group" aria-label="Pièce de promotion">
+            {PROMOTION_PIECES.map(([piece, label]) => (
+              <button
+                key={piece}
+                type="button"
+                onClick={() => {
+                  setPromotion(null);
+                  play({ from: pendingPromotion.from, to: pendingPromotion.to, promotion: piece });
+                }}
+              >
+                {label}
+              </button>
+            ))}
+            <button type="button" onClick={() => setPromotion(null)}>
+              Annuler
+            </button>
+          </div>
+        )}
         <PlayerTag name={bottom.username} rating={bottom.rating} />
         <div className="nav" role="group" aria-label="Navigation dans la partie">
-          <button type="button" onClick={() => go(0)}>
+          <button type="button" onClick={() => (variation ? setNav({ ...nav, cursor: 0 }) : go(0))}>
             Début
           </button>
           <button
@@ -258,7 +299,12 @@ function Replay({
           >
             Suivant
           </button>
-          <button type="button" onClick={() => go(last)}>
+          <button
+            type="button"
+            onClick={() =>
+              variation ? setNav({ ...nav, cursor: variation.plies.length }) : go(last)
+            }
+          >
             Fin
           </button>
         </div>

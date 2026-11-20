@@ -60,18 +60,18 @@ Contrainte H3 vérifiée ligne par ligne : aucune API payante, aucun serveur, au
 
 ## 5. Modèle de données
 
-Toutes les données vivent en mémoire pendant la session, sauf mention contraire. Format versionné par `schemaVersion: 1`.
+Toutes les données vivent en mémoire pendant la session, sauf mention contraire. Rien n'est persisté hormis la préférence `localStorage` ci-dessous, donc aucun numéro de schéma n'a été nécessaire.
 
-- `GameSummary` (réponse de l'archive mensuelle) : `url`, `endTime`, `timeClass`, `rules`, `rated`, `white` et `black` (`username`, `rating`, `result`), `pgn`, `accuracies?`. Champs observés le 2026-10-24 : `time_class` est présent dans l'archive mensuelle, `accuracies` dans 434 parties sur 435.
+- `GameSummary` (réponse de l'archive mensuelle) : `url`, `endTime`, `timeClass`, `rules`, `rated`, `white` et `black` (`username`, `rating`, `result`), `pgn`, plus `moveCount` et `supported` calculés. Champs observés le 2026-10-24 : `time_class` est présent dans l'archive mensuelle, `accuracies` dans 434 parties sur 435 (non utilisé : la précision est recalculée).
 - `ParsedGame` : `headers`, `startFen`, `plies: Ply[]`.
 - `Ply` : `index`, `color`, `san`, `uci`, `fenBefore`, `fenAfter`, `legalMoveCount`, `clockSeconds?`.
 - `PositionEval` : `fen`, `depth`, `cp?` ou `mate?` (point de vue des blancs), `bestMoveUci?`, `pv: string[]`.
 - `MoveAnalysis` : `plyIndex`, `winBefore`, `winAfter` (point de vue du joueur), `loss`, `accuracy`, `category`, `bestMoveSan?`.
-- `GameAnalysis` : `schemaVersion`, `preset`, `engine` (`stockfish-19-lite-single`), `positions`, `moves`, `complete`, `players.white|black` (`accuracy`, `counts`, `elo?` : `value`, `low`, `high`, `modelVersion`).
-- `elo-model.json` : `version`, `preset`, `timeClass`, coefficients, quantiles des résidus, `trainedOn` (nombre de parties, période).
+- `GameReport` (implémenté, `src/analysis/report.ts`) : `moves` (un `MoveAnalysis` par demi-coup, absent si non analysé), `accuracy` (`white`, `black`), `complete`. La synthèse (`GameSynthesis` : compteurs, ouverture, moments clés) et l'estimation d'Elo en sont dérivées à l'affichage.
+- `elo-model.json` (implémenté) : `features` (les 15 variables de `FEATURE_NAMES` dans `src/analysis/elo.ts`, cadence en indicatrices avec le blitz pour référence) et `presets.<préréglage>` : `coefficients`, `lower` et `upper` (quantiles 10 % et 90 % des résidus), `samples`, `depth`, `engine`. Seul `standard` est calibré ; en profonde, l'estimation est indiquée comme non calibrée. Un test vérifie l'accord entre `features` et le code.
 - `openings.json` : `names` (EPD vers `[eco, nom]`, 3865 positions) et `book` (4117 positions intermédiaires des lignes connues, sans nom propre), soit 723 Ko bruts et 93 Ko compressés, chargés à la demande dans un fichier séparé (T6).
 - Score moteur (T5) : `{ cp }` ou `{ mate, winner }` du point de vue des blancs ; `mate: 0` pour une position déjà matée, évaluée sans moteur.
-- `localStorage`, clé `chessanalyser:v1` : `{ lastUsername, preset }`.
+- `localStorage`, clé `chessanalyser:v1` : `{ lastUsername }`, écrit seulement quand le joueur existe. **[Écart]** Le préréglage prévu à l'origine n'est ni choisi en E1 ni mémorisé : toute analyse démarre en Standard, la profonde se lance depuis E3.
 - Jeu de calibration : fichiers locaux dans `data/` (exclu de git), jamais publiés.
 
 Volume : une partie fait au plus quelques centaines de positions ; rien ne dépasse quelques Mo en mémoire.
@@ -129,7 +129,7 @@ Conséquence de la licence de Stockfish : le projet est publié sous GPL-3.0 (D1
 ## 11. Build, déploiement et maintenance
 
 - `npm run dev` : serveur de développement local.
-- `npm run build` : copie des fichiers moteur, génération de `openings.json` si absent, build statique dans `dist/`.
+- `npm run build` : copie des fichiers moteur, vérification des types, build statique dans `dist/` avec la CSP (`vite.config.ts`). `openings.json` est versionné ; `npm run openings` le régénère.
 - Hébergement (D5) : GitHub Pages ou Cloudflare Pages en offre gratuite **[À vérifier]** au moment de publier ; vérifier que le `.wasm` est servi avec le type `application/wasm` **[À vérifier]**.
 - Maintenance : surveiller les changements de l'API chess.com (R1) ; mettre à jour Stockfish implique de recalibrer le modèle Elo (le modèle mentionne la version du moteur).
 
@@ -165,11 +165,11 @@ ChessAnalyser/
     validate-elo.ts         contrôle AC-F6-4
   src/
     api/chesscom.ts
-    chess/game.ts
+    chess/{game.ts, variation.ts}
     engine/{types.ts, worker-engine.ts, node-engine.ts, uci.ts}
-    analysis/{winPercent.ts, accuracy.ts, classify.ts, openings.ts, keyMoments.ts, elo.ts, runAnalysis.ts}
+    analysis/{winPercent.ts, accuracy.ts, classify.ts, openings.ts, report.ts, keyMoments.ts, elo.ts, runAnalysis.ts}
     data/{openings.json, elo-model.json}
-    ui/{SearchPage, GameList, AnalysisView, Board, EvalBar, EvalGraph, MoveList, MovePanel, Summary}.tsx
+    ui/{SearchForm, GameList, AnalysisView, AnalysisControls, Board, EvalBar, EvalGraph, MoveList, MovePanel, Summary, Variation}.tsx
   tests/{fixtures/, unit/, e2e/}
   data/                     jeu de calibration local (non versionné)
   LICENSE                   GPL-3.0

@@ -120,6 +120,32 @@ test.describe('Variantes (F10), faux moteur', () => {
     await expect(indicator(page)).toHaveText('Variante : demi-coup 2 sur 2');
   });
 
+  test('Début et Fin restent dans la variante ; promotion au choix', async ({ page }) => {
+    await page.getByRole('button', { name: 'Explorer des variantes' }).click();
+    const field = page.getByLabel('Jouer un coup');
+    for (const move of ['e4', 'd5', 'exd5', 'c6', 'dxc6', 'Nf6', 'cxb7', 'Nbd7']) {
+      await field.fill(move);
+      await field.press('Enter');
+    }
+    await expect(indicator(page)).toHaveText('Variante : demi-coup 8 sur 8');
+
+    // Le pion b7 prend en c8 : la pièce est demandée avant de jouer le coup.
+    await square(page, 'b7').click();
+    await square(page, 'c8').click();
+    const choice = page.getByRole('group', { name: 'Pièce de promotion' });
+    await expect(choice).toBeVisible();
+    await expect(indicator(page)).toHaveText('Variante : demi-coup 8 sur 8');
+    await choice.getByRole('button', { name: 'Cavalier' }).click();
+    await expect(page.getByRole('button', { name: 'Variante 5. bxc8=N' })).toBeVisible();
+    await expect(choice).toHaveCount(0);
+
+    const nav = page.getByRole('group', { name: 'Navigation dans la partie' });
+    await nav.getByRole('button', { name: 'Début' }).click();
+    await expect(indicator(page)).toHaveText('Variante : demi-coup 0 sur 9');
+    await nav.getByRole('button', { name: 'Fin' }).click();
+    await expect(indicator(page)).toHaveText('Variante : demi-coup 9 sur 9');
+  });
+
   test('l’échiquier reste non interactif hors exploration', async ({ page }) => {
     await expect(page.locator('.board [inert]')).toHaveCount(1);
     await expect(page.getByLabel('Jouer un coup')).toHaveCount(0);

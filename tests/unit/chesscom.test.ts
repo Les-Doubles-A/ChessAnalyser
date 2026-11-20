@@ -191,3 +191,34 @@ describe('ChessComClient', () => {
     expect(calls).toEqual(['https://api.chess.com/pub/player/a%2Fb/games/archives']);
   });
 });
+
+describe('corrections de l’audit (API chess.com)', () => {
+  const month = (m: string) => `https://api.chess.com/pub/player/testeur/games/2026/${m}`;
+
+  it('trois derniers mois vides : on peut encore remonter vers les archives plus anciennes', async () => {
+    const archives = [month('08'), month('09'), month('10'), month('11'), month('12')];
+    const { fetch } = fakeFetch({
+      [ARCHIVES_URL]: [{ status: 200, body: { archives } }],
+      [month('12')]: [{ status: 200, body: { games: [] } }],
+      [month('11')]: [{ status: 200, body: { games: [] } }],
+      [month('10')]: [{ status: 200, body: { games: [] } }],
+    });
+    const result = await new ChessComClient({ fetch }).getLatestGames('testeur');
+    expect(result).toEqual({ archives, index: 2, games: [] });
+  });
+
+  it('refuse une adresse d’archive hors du format attendu', async () => {
+    const { fetch } = fakeFetch({
+      [ARCHIVES_URL]: [
+        { status: 200, body: { archives: ['https://api.chess.com/pub/player/x/../../titled/GM'] } },
+      ],
+    });
+    await expect(new ChessComClient({ fetch }).getArchives('testeur')).rejects.toBeInstanceOf(
+      ChessComError,
+    );
+  });
+
+  it('countMoves ignore une valeur d’en-tête contenant « ] » et un numéro', () => {
+    expect(countMoves('[Event "Coupe ] 12. ronde"]\n\n1. e4 {[%clk 0:03:00]} e5 2. Nf3 *')).toBe(2);
+  });
+});

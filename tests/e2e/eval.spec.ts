@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FOOLS_MATE_PGN } from '../fixtures/chesscom';
-import { foolsMateTable, mockEngine } from './fakeEngine';
+import { foolsMateTable, mockEngine, SLOW_MS } from './fakeEngine';
 import { mockChessCom, searchFor } from './helpers';
 
 async function openFoolsMate(page: Page) {
@@ -20,7 +20,7 @@ async function whiteHeight(page: Page): Promise<number> {
 
 test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   test('AC-F3-1 : l’analyse démarre seule et la progression avance', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 600 });
+    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: SLOW_MS });
     await openFoolsMate(page);
     await expect(page.getByText(/Analyse : [1-3] \/ 5 positions/)).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('Analyse terminée (Standard, profondeur 14).')).toBeVisible({
@@ -55,7 +55,7 @@ test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   });
 
   test('AC-F3-3 : annuler arrête vite et garde les évaluations obtenues', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 700 });
+    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: SLOW_MS });
     await openFoolsMate(page);
     await expect(page.getByText(/Analyse : [1-3] \/ 5 positions/)).toBeVisible({ timeout: 15000 });
     const t0 = Date.now();
@@ -81,12 +81,20 @@ test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   });
 
   test('P3 : analyse profonde', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 50 });
+    const table = foolsMateTable(FOOLS_MATE_PGN);
+    const startFen = Object.keys(table)[0]!;
+    // Position de départ : +1.5 à la profondeur 14, +3.0 seulement si `go depth 18` est envoyé.
+    await mockEngine(page, table, {
+      delayMs: 50,
+      deepTable: { [startFen]: { score: 'cp 300', best: 'e2e4' } },
+    });
     await openFoolsMate(page);
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +1.5', { timeout: 15000 });
     await page.getByRole('button', { name: 'Analyse profonde' }).click();
     await expect(page.getByText('Analyse terminée (profonde, profondeur 18).')).toBeVisible({
       timeout: 15000,
     });
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +3.0');
     await expect(page.getByRole('button', { name: 'Analyse profonde' })).toHaveCount(0);
   });
 });

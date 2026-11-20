@@ -15,7 +15,9 @@ export function AnalysisControls({ state, onCancel, onStart }: Props) {
   if (status === 'running') {
     return (
       <div className="analysis-controls">
-        <p className="status" aria-live="polite">
+        {/* Pas d'aria-live ici : le compteur change à chaque position et saturerait les
+            lecteurs d'écran ; la barre de progression reste consultable à la demande. */}
+        <p className="status">
           Analyse {preset === 'deep' ? 'profonde ' : ''}: {done} / {total} positions
         </p>
         <progress max={total} value={done} aria-label="Progression de l’analyse" />

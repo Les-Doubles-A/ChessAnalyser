@@ -2,15 +2,17 @@
 
 Dépôt GitHub : **https://github.com/Les-Doubles-A/ChessAnalyser**
 
-Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, on choisit une partie, puis Stockfish analyse chaque position. Le site affiche la barre et la courbe d'évaluation, la classification de chaque coup, le meilleur coup et la précision des deux joueurs. La synthèse et l'estimation d'Elo arrivent dans la tranche suivante (voir `product/IMPLEMENTATION_PLAN.md`).
+Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, on choisit une partie, puis Stockfish analyse chaque position. Le site affiche la barre et la courbe d'évaluation, la classification de chaque coup, le meilleur coup, la précision des deux joueurs, une synthèse (ouverture, coups par catégorie, moments clés) et une estimation du niveau joué sur la partie. On peut aussi explorer des variantes à partir de n'importe quelle position de la partie.
 
-Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs. Le calcul se fait entièrement dans le navigateur.
+Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs (le build impose une CSP qui n'autorise que le site et `api.chess.com`). Le calcul se fait entièrement dans le navigateur.
+
+État : version 0.1.1 publiée ; la validation complète du MVP (T12 de `product/IMPLEMENTATION_PLAN.md` : performances et accessibilité vérifiées à la main, rapport `docs/validation.md`) reste à faire.
 
 ## Prérequis
 
 - Node.js 24 et npm 11 (versions utilisées pendant le développement)
 
-## Installation
+## Installation pour le développement
 
 ```sh
 npm install
@@ -19,18 +21,19 @@ npx playwright install chromium firefox   # navigateurs des tests de bout en bou
 
 ## Commandes
 
-| Commande              | Rôle                                                                                    |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| `npm run dev`         | Copie le moteur puis lance le serveur de développement (http://localhost:5173)          |
-| `npm run build`       | Copie le moteur, vérifie les types, build statique dans `dist/`                         |
-| `npm test`            | Tests unitaires (Vitest)                                                                |
-| `npm run test:engine` | Tests d'intégration avec le vrai Stockfish sous Node                                    |
-| `npm run test:e2e`    | Tests de bout en bout (Playwright, Chromium et Firefox, API chess.com simulée)          |
-| `npm run test:all`    | Types, lint, tests unitaires, moteur et bout en bout                                    |
-| `npm run engine`      | Copie `stockfish-19-lite-single` (.js et .wasm) de `node_modules` vers `public/engine/` |
-| `npm run openings`    | Régénère `src/data/openings.json` depuis lichess-org/chess-openings (CC0)               |
-| `npm run lint`        | ESLint                                                                                  |
-| `npm run format`      | Prettier                                                                                |
+| Commande                 | Rôle                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `npm run dev`            | Copie le moteur puis lance le serveur de développement (http://localhost:5173)          |
+| `npm run build`          | Copie le moteur, vérifie les types, build statique dans `dist/`                         |
+| `npm test`               | Tests unitaires (Vitest)                                                                |
+| `npm run test:engine`    | Tests d'intégration avec le vrai Stockfish sous Node                                    |
+| `npm run test:e2e`       | Tests de bout en bout (Playwright, Chromium et Firefox, API chess.com simulée)          |
+| `npm run test:e2e:build` | Mêmes tests de bout en bout sur le site construit (CSP active)                          |
+| `npm run test:all`       | Types, lint, tests unitaires, moteur et bout en bout (développement et build)           |
+| `npm run engine`         | Copie `stockfish-19-lite-single` (.js et .wasm) de `node_modules` vers `public/engine/` |
+| `npm run openings`       | Régénère `src/data/openings.json` depuis lichess-org/chess-openings (CC0)               |
+| `npm run lint`           | ESLint                                                                                  |
+| `npm run format`         | Prettier                                                                                |
 
 ## Jeu de calibration de l'Elo
 
@@ -42,6 +45,8 @@ Trois scripts Node préparent, dans `data/` (exclu de git, jamais publié), les 
 | `npm run dataset:analyse -- [--preset deep]` | Analyse chaque partie avec Stockfish sous Node (Standard par défaut, environ 6 s par partie)                                              |
 | `npm run dataset:split`                      | Sépare de façon fixe calibration et validation par joueur, écrit le rapport de répartition                                                |
 
+La collecte annonce un contact dans son User-Agent, comme le demande l'API : définir la variable d'environnement `CHESSANALYSER_CONTACT` (une adresse e-mail par exemple), sinon l'adresse du dépôt est utilisée. Les parties dont l'analyse a échoué sont retentées au lancement suivant de `dataset:analyse`.
+
 Ensuite, `npm run elo:calibrate` ajuste le modèle sur `data/calibration.jsonl` et l'écrit dans `src/data/elo-model.json` (versionné, embarqué dans le site) ; `npm run elo:validate` le contrôle sur les joueurs de `data/validation.jsonl` et écrit `docs/elo-validation-<préréglage>.md` (statistiques agrégées seulement). Les deux acceptent `-- --preset deep`.
 
 Seuls sont conservés les classements, la cadence, les coups et des pseudonymes (HMAC avec une clé locale `data/secret.txt`). La file d'attente de la collecte (`data/collect-state.json`) contient des pseudos en clair ; elle est supprimée quand les quotas sont atteints.
@@ -50,16 +55,19 @@ Seuls sont conservés les classements, la cadence, les coups et des pseudonymes 
 
 ```
 src/api/        client de l'API publique chess.com (requêtes en série)
-src/chess/      lecture des PGN (chess.js)
+src/chess/      lecture des PGN (chess.js), variantes jouées par l'utilisateur
 src/engine/     dialogue UCI, Stockfish en Web Worker (site) ou sous Node (tests, scripts)
-src/analysis/   probabilité de gain, précision (algorithme Lichess), classification, ouvertures
-src/data/       base d'ouvertures générée
+src/analysis/   probabilité de gain, précision (algorithme Lichess), classification, rapport,
+                ouvertures, moments clés, estimation d'Elo
+src/data/       base d'ouvertures générée, modèle Elo calibré (elo-model.json)
 src/ui/         composants React
 scripts/        copie du moteur, base d'ouvertures, jeu de calibration de l'Elo
 tests/unit/     tests Vitest
 tests/engine/   tests avec le vrai moteur
 tests/e2e/      tests Playwright (dont un faux moteur UCI scripté)
 tests/fixtures/ réponses chess.com fictives, partie de référence
+installer/      lanceur PowerShell et installeur Windows (Inno Setup)
+docs/           rapports de validation du modèle Elo
 product/        cadrage : brief, critères d'acceptation, architecture, plan, risques
 ```
 
@@ -68,7 +76,8 @@ product/        cadrage : brief, critères d'acceptation, architecture, plan, ri
 GPL-3.0-or-later (voir `LICENSE`). Ce choix est imposé par Stockfish (GPL-3.0), embarqué dans le site ; sa licence est copiée dans `public/engine/COPYING-stockfish.txt`. La base d'ouvertures vient de lichess-org/chess-openings (CC0-1.0). La formule de précision reprend l'algorithme publié par Lichess.
 
 <!-- installeur-release -->
-## Installation
+
+## Installation sous Windows
 
 Téléchargez **`ChessAnalyser-Setup-0.1.1.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
 
@@ -78,4 +87,4 @@ L'installeur n'est pas signé : si Windows SmartScreen l'affiche, cliquez sur «
 
 ### Recréer l'installeur
 
-Compiler l'application (`npm run build`), puis lancer [Inno Setup 6](https://jrsoftware.org/isinfo.php) : `iscc installer\ChessAnalyser.iss`. Le setup est créé dans `installer\Output\`.
+Compiler l'application (`npm run build`), puis lancer [Inno Setup 6](https://jrsoftware.org/isinfo.php) : `iscc installer\ChessAnalyser.iss`. Le setup est créé dans `installer\Output\`. La version (`MyAppVersion`) doit suivre celle de `package.json` ; un test unitaire le vérifie.

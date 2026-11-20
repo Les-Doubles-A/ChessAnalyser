@@ -1,5 +1,5 @@
 // Valide le modèle Elo sur data/validation.jsonl, joueurs absents de la calibration (AC-F6-4),
-// et écrit le rapport docs/elo-validation.md (statistiques agrégées seulement).
+// et écrit le rapport docs/elo-validation-<préréglage>.md (statistiques agrégées seulement).
 // Usage : npm run elo:validate -- [--preset standard|deep]
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';

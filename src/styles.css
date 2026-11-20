@@ -335,6 +335,13 @@ button.game-row:hover {
   margin-top: 0.5rem;
 }
 
+.promotion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
 .position-indicator {
   color: var(--muted);
   font-size: 0.9rem;

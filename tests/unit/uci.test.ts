@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseInfo, toWhiteScore, UciEngine, type UciTransport } from '../../src/engine/uci';
-import { EngineStartError, isAbortError } from '../../src/engine/types';
+import {
+  EngineStartError,
+  EngineStoppedError,
+  EngineTimeoutError,
+  isAbortError,
+} from '../../src/engine/types';
 
 describe('parseInfo', () => {
   it('lit une ligne Stockfish 19', () => {
@@ -119,5 +124,37 @@ describe('UciEngine', () => {
   it('échoue au démarrage si le moteur ne répond pas', async () => {
     const engine = new UciEngine(fakeTransport({ silent: true }), { timeoutMs: 20 });
     await expect(engine.evaluate(BLACK_TO_MOVE, 2)).rejects.toBeInstanceOf(EngineStartError);
+  });
+});
+
+describe('UciEngine, corrections de l’audit', () => {
+  it('retire l’écouteur d’annulation à la fin de chaque évaluation', async () => {
+    const transport = fakeTransport();
+    const engine = new UciEngine(transport);
+    const controller = new AbortController();
+    const add = vi.spyOn(controller.signal, 'addEventListener');
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    for (let i = 0; i < 3; i++) {
+      const result = engine.evaluate(BLACK_TO_MOVE, 2, controller.signal);
+      await new Promise((r) => setTimeout(r, 0));
+      transport.finishGo();
+      await result;
+    }
+    expect(add).toHaveBeenCalledTimes(3);
+    expect(remove).toHaveBeenCalledTimes(3);
+  });
+
+  it('échoue si le moteur ne rend aucun coup dans le délai, puis reste hors service', async () => {
+    const engine = new UciEngine(fakeTransport(), { evalTimeoutMs: 20 });
+    await expect(engine.evaluate(BLACK_TO_MOVE, 30)).rejects.toBeInstanceOf(EngineTimeoutError);
+    await expect(engine.evaluate(BLACK_TO_MOVE, 2)).rejects.toBeInstanceOf(EngineTimeoutError);
+  });
+
+  it('terminate() fait échouer l’évaluation en cours au lieu de la laisser en attente', async () => {
+    const engine = new UciEngine(fakeTransport());
+    const running = engine.evaluate(BLACK_TO_MOVE, 30);
+    await new Promise((r) => setTimeout(r, 0));
+    engine.terminate();
+    await expect(running).rejects.toBeInstanceOf(EngineStoppedError);
   });
 });
