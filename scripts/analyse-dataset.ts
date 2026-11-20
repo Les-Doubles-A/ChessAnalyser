@@ -1,17 +1,25 @@
 // Analyse Stockfish (Node) des parties collectées, avec les mêmes moteur, profondeurs et
 // orchestrateur que le site (ADR-2, ADR-3), pour que le modèle Elo reste valable.
-// Usage : npm run dataset:analyse -- [--preset standard|deep] [--limit N] [--skip N] [--until N]
-// Reprise : les parties déjà présentes dans data/analysis-<préréglage>.jsonl sont sautées.
+// Usage : npm run dataset:analyse -- [--preset standard|deep] [--engine lite|native]
+//         [--limit N] [--skip N] [--until N] [--part K]
+// Reprise : les parties déjà analysées (data/analysis-<préréglage>[-native]*.jsonl) sont sautées.
 // `--skip` et `--until` bornent les parties collectées traitées (index de début inclus, de
-// fin exclu), pour répartir l'analyse entre plusieurs processus sans doublon.
+// fin exclu), pour répartir l'analyse entre plusieurs processus sans doublon ; `--part`
+// donne à chaque processus son propre fichier de sortie.
+// `--engine native` utilise le Stockfish natif de l'application de bureau (desktop/).
 import { parseArgs } from 'node:util';
 import { PRESET_DEPTH, runAnalysis, type Preset } from '../src/analysis/runAnalysis';
 import { parseGame, type ParsedGame } from '../src/chess/game';
-import { createNodeEngine } from '../src/engine/node-engine';
 import { appendJsonl, readJsonl } from './data-files';
 import type { AnalysedGame, CollectedGame } from './dataset';
-
-const ENGINE = 'stockfish-19-lite-single';
+import {
+  analysisFile,
+  createEngine,
+  ENGINE_NAMES,
+  ENGINE_OPTION,
+  engineKind,
+  readAnalyses,
+} from './engine-choice';
 
 const { values } = parseArgs({
   options: {
@@ -19,20 +27,20 @@ const { values } = parseArgs({
     limit: { type: 'string' },
     skip: { type: 'string', default: '0' },
     until: { type: 'string' },
+    part: { type: 'string' },
+    ...ENGINE_OPTION,
   },
 });
 const preset = values.preset as Preset;
 if (!(preset in PRESET_DEPTH)) throw new Error(`Préréglage inconnu : ${values.preset}`);
+const kind = engineKind(values.engine);
+const ENGINE = ENGINE_NAMES[kind];
 const depth = PRESET_DEPTH[preset];
-const output = `analysis-${preset}.jsonl`;
+const output = analysisFile(preset, kind, values.part);
 
 // Seules les analyses réussies comptent : une partie en erreur est retentée au lancement
 // suivant (scripts/elo-data.ts ignore déjà les lignes en erreur).
-const done = new Set(
-  readJsonl<AnalysedGame>(output)
-    .filter((row) => row.evals)
-    .map((row) => row.id),
-);
+const done = new Set(readAnalyses(preset, kind).map((row) => row.id));
 const todo = readJsonl<CollectedGame>('games.jsonl')
   .slice(Number(values.skip), values.until ? Number(values.until) : undefined)
   .filter((game) => !done.has(game.id))
@@ -41,7 +49,7 @@ const todo = readJsonl<CollectedGame>('games.jsonl')
 console.log(
   `${done.size} parties déjà analysées (${preset}, profondeur ${depth}), ${todo.length} à faire.`,
 );
-let engine = createNodeEngine();
+let engine = createEngine(kind);
 const started = Date.now();
 
 try {
@@ -67,7 +75,7 @@ try {
         // Le moteur peut être hors service (figé, arrêté) : on repart d'un moteur neuf
         // plutôt que d'échouer sur toutes les parties suivantes.
         engine.terminate();
-        engine = createNodeEngine();
+        engine = createEngine(kind);
       }
     }
     appendJsonl(output, row);

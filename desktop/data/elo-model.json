@@ -1,0 +1,45 @@
+{
+  "features": [
+    "constante",
+    "precision",
+    "precision2",
+    "logPerteMoyenne",
+    "tauxImprecisions",
+    "tauxErreurs",
+    "tauxGaffes",
+    "logPertePositionDisputee",
+    "partPositionsDisputees",
+    "logPerteCentipions",
+    "tauxBonsCoups",
+    "logCoups",
+    "bullet",
+    "rapide",
+    "daily"
+  ],
+  "presets": {
+    "standard": {
+      "coefficients": [
+        -108.19,
+        -11.579,
+        252.176,
+        -215.056,
+        -492.697,
+        -779.5,
+        -758.425,
+        -149.477,
+        1033.085,
+        142.743,
+        255.8,
+        238.735,
+        87.682,
+        14.598,
+        -227.988
+      ],
+      "lower": -696,
+      "upper": 713,
+      "samples": 3899,
+      "depth": 14,
+      "engine": "stockfish-19-native"
+    }
+  }
+}

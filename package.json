@@ -14,6 +14,7 @@
     "elo:calibrate": "node --import ./scripts/ts-hooks.mjs scripts/calibrate-elo.ts",
     "elo:validate": "node --import ./scripts/ts-hooks.mjs scripts/validate-elo.ts",
     "h5:compare": "node --import ./scripts/ts-hooks.mjs scripts/compare-engines.ts",
+    "golden:export": "node --import ./scripts/ts-hooks.mjs scripts/export-golden.ts",
     "measure:timing": "playwright test --config playwright.perf.config.ts timing",
     "smoke:real": "playwright test --config playwright.perf.config.ts real-chesscom",
     "predev": "npm run engine",

@@ -4,6 +4,8 @@ Dépôt GitHub : **https://github.com/Les-Doubles-A/ChessAnalyser**
 
 Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, on choisit une partie, puis Stockfish analyse chaque position. Le site affiche la barre et la courbe d'évaluation, la classification de chaque coup, le meilleur coup, la précision des deux joueurs, une synthèse (ouverture, coups par catégorie, moments clés) et une estimation du niveau joué sur la partie. On peut aussi explorer des variantes à partir de n'importe quelle position de la partie.
 
+Deux versions coexistent : le **site** (React, Stockfish WebAssembly dans le navigateur) et l'**application de bureau** (Rust et egui, Stockfish 19 natif, voir plus bas). Elles partagent les mêmes règles d'analyse : un jeu de référence vérifie que l'application retrouve exactement les calculs du site.
+
 Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs (le build impose une CSP qui n'autorise que le site et `api.chess.com`). Le calcul se fait entièrement dans le navigateur.
 
 État : version 0.1.2. Validation du MVP (T12) en partie faite, voir `docs/validation.md` : durées, confidentialité et fiabilité du moteur allégé vérifiées (98,9 % des gaffes du moteur complet signalées au moins comme erreur) ; restent le lecteur d'écran et le test avec des joueurs.
@@ -48,7 +50,9 @@ Trois scripts Node préparent, dans `data/` (exclu de git, jamais publié), les 
 
 La collecte annonce un contact dans son User-Agent, comme le demande l'API : définir la variable d'environnement `CHESSANALYSER_CONTACT` (une adresse e-mail par exemple), sinon l'adresse du dépôt est utilisée. Les parties dont l'analyse a échoué sont retentées au lancement suivant de `dataset:analyse`.
 
-Ensuite, `npm run elo:calibrate` ajuste le modèle sur `data/calibration.jsonl` et l'écrit dans `src/data/elo-model.json` (versionné, embarqué dans le site) ; `npm run elo:validate` le contrôle sur les joueurs de `data/validation.jsonl` et écrit `docs/elo-validation-<préréglage>.md` (statistiques agrégées seulement). Les deux acceptent `-- --preset deep`.
+Avec `-- --engine native`, `dataset:analyse` utilise le Stockfish natif de l'application de bureau (`desktop/engine/stockfish.exe`) ; `--part K` donne à chaque processus d'une analyse répartie son propre fichier.
+
+Ensuite, `npm run elo:calibrate` ajuste le modèle sur `data/calibration.jsonl` et l'écrit dans `src/data/elo-model.json` (versionné, embarqué dans le site) ; `npm run elo:validate` le contrôle sur les joueurs de `data/validation.jsonl` et écrit `docs/elo-validation-<préréglage>.md` (statistiques agrégées seulement). Les deux acceptent `-- --preset deep` et `-- --engine native` (modèle écrit dans `desktop/data/elo-model.json`, rapport `docs/elo-validation-<préréglage>-native.md`). `npm run golden:export` écrit le jeu de référence qui vérifie la parité de l'application de bureau (`desktop/tests/golden/`).
 
 Deux mesures de T12 utilisent aussi ce jeu local : `npm run measure:timing` chronomètre l'analyse de 5 parties d'environ 40 coups dans Chromium et Firefox (vrai moteur, site construit), et `npm run h5:compare -- [--games 50]` compare les gaffes du moteur du site à celles du moteur complet, puis écrit `docs/h5-moteurs.md`. Résultats dans `docs/validation.md`.
 
@@ -69,10 +73,27 @@ tests/unit/     tests Vitest
 tests/engine/   tests avec le vrai moteur
 tests/e2e/      tests Playwright (dont un faux moteur UCI scripté)
 tests/fixtures/ réponses chess.com fictives, partie de référence
-installer/      lanceur PowerShell et installeur Windows (Inno Setup)
+desktop/        application de bureau en Rust (egui, Stockfish natif), ses tests et ses ressources
+installer/      lanceur PowerShell et installeurs Windows (Inno Setup) du site et de l'application
 docs/           rapports de validation du modèle Elo
 product/        cadrage : brief, critères d'acceptation, architecture, plan, risques
 ```
+
+## Application de bureau (Rust)
+
+Une vraie application Windows, sans navigateur : fenêtre native (egui), Stockfish 19 natif (5 à 10 fois plus rapide que la version WebAssembly, réseau NNUE complet), mêmes fonctions que le site : recherche chess.com, liste et filtre, échiquier et navigation au clavier, analyse Standard ou Profonde (préréglage mémorisé), barre et courbe, classification, précision, synthèse, ouverture, estimation d'Elo (modèle calibré avec ce moteur), variantes au clavier ou à la souris avec choix de la pièce de promotion.
+
+| Commande (dans `desktop/`)                                     | Rôle                                                                          |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `powershell -ExecutionPolicy Bypass -File fetch-stockfish.ps1` | Télécharge Stockfish 19 (binaire officiel, empreinte vérifiée) dans `engine/` |
+| `cargo run --release`                                          | Lance l'application                                                           |
+| `cargo test --release`                                         | Tests : cœur, parité avec le site, parcours d'interface avec le vrai moteur   |
+| `cargo clippy --all-targets`                                   | Lint                                                                          |
+| `iscc ..installerChessAnalyserDesktop.iss` (depuis la racine)  | Installeur Windows, après `cargo build --release`                             |
+
+Options de vérification : `--pgn <fichier>` ouvre une partie locale, `--search <pseudo>` lance une recherche, `--screenshot <png>` enregistre une capture puis quitte.
+
+Pièces : jeu cburnett (Colin M.L. Burnett, GPLv2+), repris de lichess-org/lila (`desktop/assets/pieces/LICENSE.md`). Préférences : `%APPDATA%Les-Doubles-AChessAnalyserconfigprefs.json`.
 
 ## Licence
 
@@ -87,6 +108,8 @@ Téléchargez **`ChessAnalyser-Setup-0.1.2.exe`** depuis la [dernière release](
 L'application s'installe pour l'utilisateur courant (sans droits administrateur). Le raccourci du menu Démarrer lance un petit serveur local (http://localhost:51730) et ouvre le navigateur ; le serveur s'arrête seul après 15 minutes sans activité.
 
 L'installeur n'est pas signé : si Windows SmartScreen l'affiche, cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
+
+L'application de bureau a son propre installeur, **`ChessAnalyser-Desktop-Setup-0.2.0.exe`** : elle s'installe à côté de la version web, sans serveur local ni navigateur.
 
 ### Recréer l'installeur
 

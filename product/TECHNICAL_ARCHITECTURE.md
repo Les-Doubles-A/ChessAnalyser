@@ -149,6 +149,7 @@ Conséquence de la licence de Stockfish : le projet est publié sous GPL-3.0 (D1
 - **ADR-3 : un seul adaptateur moteur pour le site et les scripts.** Évite que le modèle Elo soit calibré sur des évaluations différentes de celles du site.
 - **ADR-4 : seuils de classification en Win% plutôt qu'en centipions.** Une perte de 2 pions compte peu quand on gagne déjà de 10 pions ; le Win% reflète l'effet réel sur l'issue.
 - **ADR-5 : GPL-3.0.** Imposée par la distribution de Stockfish (D1).
+- **ADR-6 : application de bureau native en Rust (2026-11-20).** Demandée par l'utilisateur : une vraie application, sans interface web. Rust et egui (fenêtre native, rendu GPU), Stockfish 19 natif (binaire officiel « universal » qui choisit le code optimal pour le processeur), un seul fil et 16 Mo de table comme pour la calibration (résultats reproductibles). Le site reste en place ; les deux versions partagent la base d'ouvertures et les règles d'analyse. Le cœur Rust (`desktop/src/analysis.rs`, `chess.rs`) est un portage fidèle du TypeScript, contrôlé par un jeu de référence exporté du code TypeScript (`npm run golden:export`, `desktop/tests/golden.rs`) : FEN, coups, classification, précision, synthèse, variables et estimation Elo identiques. Le modèle Elo de l'application est calibré avec le moteur natif (`--engine native`) et rangé à part (`desktop/data/elo-model.json`). Conséquence : installeur d’environ 83 Mo (le réseau NNUE du moteur, 100 Mo, se compresse peu), analyse Standard d'une partie de 40 coups en quelques secondes.
 
 ## 14. Arborescence proposée
 

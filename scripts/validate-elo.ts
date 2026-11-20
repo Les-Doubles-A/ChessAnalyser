@@ -1,27 +1,31 @@
 // Valide le modèle Elo sur data/validation.jsonl, joueurs absents de la calibration (AC-F6-4),
 // et écrit le rapport docs/elo-validation-<préréglage>.md (statistiques agrégées seulement).
-// Usage : npm run elo:validate -- [--preset standard|deep]
+// Usage : npm run elo:validate -- [--preset standard|deep] [--engine lite|native]
+// Avec `--engine native`, valide desktop/data/elo-model.json et écrit
+// docs/elo-validation-<préréglage>-native.md.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { estimateElo, type EloModel } from '../src/analysis/elo';
 import { PRESET_DEPTH, type Preset } from '../src/analysis/runAnalysis';
 import { bandLabel, bandOf, TIME_CLASSES } from './dataset';
 import { loadRows } from './elo-data';
+import { ENGINE_OPTION, engineKind, modelFile, validationReport } from './engine-choice';
 import { median } from './regression';
 
 const TARGET = { games: 300, medianError: 300, coverageMin: 75, coverageMax: 85 };
 
-const { values } = parseArgs({ options: { preset: { type: 'string', default: 'standard' } } });
+const { values } = parseArgs({
+  options: { preset: { type: 'string', default: 'standard' }, ...ENGINE_OPTION },
+});
 const preset = values.preset as Preset;
 if (!(preset in PRESET_DEPTH)) throw new Error(`Préréglage inconnu : ${values.preset}`);
+const kind = engineKind(values.engine);
 
-const model = JSON.parse(
-  readFileSync(new URL('../src/data/elo-model.json', import.meta.url), 'utf8'),
-) as EloModel;
+const model = JSON.parse(readFileSync(modelFile(kind), 'utf8')) as EloModel;
 const presetModel = model.presets[preset];
 if (!presetModel) throw new Error(`Aucun modèle calibré pour ${preset} : lancer elo:calibrate`);
 
-const { rows, skipped } = loadRows(preset, 'validation.jsonl');
+const { rows, skipped } = loadRows(preset, 'validation.jsonl', kind);
 const results = rows.flatMap(({ sample, features }) => {
   const estimate = estimateElo(features, sample.timeClass, presetModel);
   if (estimate?.kind !== 'estimate') return [];
@@ -59,7 +63,7 @@ const bands = [...new Set(results.map((r) => bandOf(r.sample.rating)))].sort(
 const lines = [
   '# Validation de l’estimation d’Elo (AC-F6-4)',
   '',
-  `Généré par \`npm run elo:validate -- --preset ${preset}\` le ${new Date().toISOString().slice(0, 10)}.`,
+  `Généré par \`npm run elo:validate -- --preset ${preset} --engine ${kind}\` le ${new Date().toISOString().slice(0, 10)}.`,
   `Moteur ${presetModel.engine}, profondeur ${presetModel.depth}, modèle calibré sur ${presetModel.samples} échantillons.`,
   `Validation : ${all.n} échantillons, ${games} parties, joueurs absents de la calibration (écartés : ${skipped.notAnalysed} non analysés, ${skipped.tooShort} trop courts, ${skipped.incomplete} incomplets).`,
   '',
@@ -86,6 +90,6 @@ const lines = [
 ];
 const report = lines.join('\n');
 mkdirSync(new URL('../docs/', import.meta.url), { recursive: true });
-writeFileSync(new URL(`../docs/elo-validation-${preset}.md`, import.meta.url), report);
+writeFileSync(validationReport(preset, kind), report);
 console.log(report);
 if (!passed) process.exitCode = 1;
