@@ -109,7 +109,7 @@ L'application s'installe pour l'utilisateur courant (sans droits administrateur)
 
 L'installeur n'est pas signé : si Windows SmartScreen l'affiche, cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
 
-L'application de bureau a son propre installeur, **`ChessAnalyser-Desktop-Setup-0.2.0.exe`** : elle s'installe à côté de la version web, sans serveur local ni navigateur.
+L'application de bureau a son propre installeur, **`ChessAnalyser-Desktop-Setup-0.2.0.exe`**, à télécharger depuis la [release desktop-v0.2.0](https://github.com/Les-Doubles-A/ChessAnalyser/releases/tag/desktop-v0.2.0) : elle s'installe à côté de la version web, sans serveur local ni navigateur.
 
 ### Recréer l'installeur
 
