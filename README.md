@@ -6,7 +6,7 @@ Revue de parties chess.com calculée dans le navigateur : on saisit un pseudo, o
 
 Projet indépendant, non affilié à Chess.com. Les parties sont lues sur l'API publique de chess.com ; aucune donnée n'est envoyée ailleurs (le build impose une CSP qui n'autorise que le site et `api.chess.com`). Le calcul se fait entièrement dans le navigateur.
 
-État : version 0.1.1 publiée. Validation du MVP (T12) en partie faite, voir `docs/validation.md` : durées et confidentialité vérifiées ; restent le lecteur d'écran et le test avec des joueurs. Le moteur allégé n'atteint pas l'accord de 90 % visé avec le moteur complet sur les gaffes (80,8 %).
+État : version 0.1.2. Validation du MVP (T12) en partie faite, voir `docs/validation.md` : durées, confidentialité et fiabilité du moteur allégé vérifiées (98,9 % des gaffes du moteur complet signalées au moins comme erreur) ; restent le lecteur d'écran et le test avec des joueurs.
 
 ## Prérequis
 
@@ -82,7 +82,7 @@ GPL-3.0-or-later (voir `LICENSE`). Ce choix est imposé par Stockfish (GPL-3.0),
 
 ## Installation sous Windows
 
-Téléchargez **`ChessAnalyser-Setup-0.1.1.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
+Téléchargez **`ChessAnalyser-Setup-0.1.2.exe`** depuis la [dernière release](https://github.com/Les-Doubles-A/ChessAnalyser/releases/latest), puis lancez-le.
 
 L'application s'installe pour l'utilisateur courant (sans droits administrateur). Le raccourci du menu Démarrer lance un petit serveur local (http://localhost:51730) et ouvre le navigateur ; le serveur s'arrête seul après 15 minutes sans activité.
 

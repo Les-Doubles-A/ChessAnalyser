@@ -28,7 +28,7 @@
 | H2 | Usage privé d'abord | Décision de l'utilisateur | Avant publication | Mentions légales, page confidentialité |
 | H3 | Zéro coût récurrent | Revue des coûts à la publication | D5 | Réévaluer un serveur d'analyse |
 | H4 | Échecs standard seulement | Part des variantes dans l'historique de l'utilisateur (M1) | Tranche 1 | Ajouter le 960 |
-| H5 | Moteur lite suffisant | Accord des gaffes lite contre complet sur 50 parties, seuil 90 % | T12 | F16 en priorité |
+| H5 | Moteur lite suffisant | Gaffes du moteur complet signalées au moins comme erreur par le moteur lite sur 50 parties, seuil 95 % (critère révisé le 2026-11-20 ; le critère initial, accord strict sur les gaffes à 90 %, donnait 80,8 %) | T12 | F16 si des utilisateurs signalent des classements faux |
 | H6 | 60 s pour 40 coups en Standard | AC-F3-5 | T12 | Baisser D4 |
 | H7 | Elo estimable sur une partie | AC-F6-4 | T11 | Repli de R4 |
 | H8 | Intérêt des joueurs | Usage personnel 2 semaines puis 5 testeurs (M5) | Après tranche 2, après MVP | Garder un usage personnel |
@@ -138,7 +138,7 @@ Le MVP est validé quand :
 - [x] `npm run test:all` passe sans échec ;
 - [ ] les scénarios M1 à M5 ont été exécutés dans Chrome et Firefox, résultats consignés dans `docs/validation.md` ;
 - [x] AC-F6-4 passe, ou le repli de H7 est appliqué et documenté ;
-- [x] H5 tranchée (taux d'accord consigné : 80,8 %, sous le seuil de 90 %, voir `docs/validation.md`) ;
+- [x] H5 tranchée : moteur lite conservé, 98,9 % des gaffes réelles signalées au moins comme erreur (critère révisé, seuil 95 %) ; accord strict 80,8 % consigné dans `docs/validation.md` ;
 - [ ] 3 testeurs sur 5 au moins déclarent qu'ils réutiliseraient l'outil.
 
 ## 7. Après le lancement

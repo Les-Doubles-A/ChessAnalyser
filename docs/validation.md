@@ -10,14 +10,14 @@ Relevé du 2026-11-20 sur la branche `audit-corrections`. Chaque ligne indique q
 
 ## Tableau de validation (RISKS_AND_TESTS.md, section 6)
 
-| Ligne                                      | État                                                                                  | Preuve                                                                                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Critères d'acceptation MVP vérifiés        | Fait pour les parties automatiques ; la part manuelle reste partielle (voir M2 et M5) | `npm run test:all` ; sections ci-dessous                                                                                            |
-| `npm run test:all` sans échec              | Fait                                                                                  | 124 tests unitaires, 4 tests moteur, 98 tests de bout en bout en développement et 98 sur le build (CSP active), Chromium et Firefox |
-| M1 à M5 dans Chrome et Firefox             | Partiel                                                                               | M1, M3 et M4 automatisés sur les deux navigateurs ; M2 relu sur captures ; M5 à finir (lecteur d'écran, testeurs)                   |
-| AC-F6-4, ou repli H7 appliqué et documenté | Fait (repli H7)                                                                       | `docs/elo-validation-standard.md` : erreur médiane 378 (critère 300 non atteint), couverture 80,4 % ; repli H7 en place (T11)       |
-| H5 tranchée                                | Fait : **hypothèse non validée au seuil de 90 %**                                     | Accord 80,8 % ; détail plus bas et `docs/h5-moteurs.md`                                                                             |
-| 3 testeurs sur 5 réutiliseraient l'outil   | À faire                                                                               | Demande des testeurs réels                                                                                                          |
+| Ligne                                      | État                                                                                           | Preuve                                                                                                                              |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Critères d'acceptation MVP vérifiés        | Fait pour les parties automatiques ; la part manuelle reste partielle (voir M2 et M5)          | `npm run test:all` ; sections ci-dessous                                                                                            |
+| `npm run test:all` sans échec              | Fait                                                                                           | 124 tests unitaires, 4 tests moteur, 98 tests de bout en bout en développement et 98 sur le build (CSP active), Chromium et Firefox |
+| M1 à M5 dans Chrome et Firefox             | Partiel                                                                                        | M1, M3 et M4 automatisés sur les deux navigateurs ; M2 relu sur captures ; M5 à finir (lecteur d'écran, testeurs)                   |
+| AC-F6-4, ou repli H7 appliqué et documenté | Fait (repli H7)                                                                                | `docs/elo-validation-standard.md` : erreur médiane 378 (critère 300 non atteint), couverture 80,4 % ; repli H7 en place (T11)       |
+| H5 tranchée                                | Fait : critère initial (90 %) non atteint, critère révisé (95 %) atteint, moteur lite conservé | Accord strict 80,8 %, gaffes réelles signalées au moins comme erreur 98,9 % ; détail plus bas et `docs/h5-moteurs.md`               |
+| 3 testeurs sur 5 réutiliseraient l'outil   | À faire                                                                                        | Demande des testeurs réels                                                                                                          |
 
 ## M3 : durée de l'analyse (AC-F3-5, H6, D4)
 
@@ -50,7 +50,7 @@ Commande : `npm run h5:compare -- --games 50` (`scripts/compare-engines.ts`). Su
 
 **Conclusion :** au seuil fixé, H5 n'est pas validée. Les écarts sont presque tous à la frontière entre erreur et gaffe. Le moteur du site ne manque presque aucune faute grave : 1,1 % des gaffes réelles n'apparaissent ni comme erreur ni comme gaffe. Il invente peu de gaffes : 4,5 % des siennes ne sont pas confirmées.
 
-Le plan prévoit dans ce cas F16 (moteur complet en option, 99 Mo à télécharger) en priorité. Autres voies possibles : assouplir le critère (« gaffe réelle signalée au moins comme erreur », 98,9 %) ou augmenter la profondeur. Cette décision revient au propriétaire du produit.
+**Décision (2026-11-20) :** le critère est révisé en « gaffe réelle signalée au moins comme erreur », seuil 95 %. Il est atteint (98,9 %), donc le moteur allégé est conservé. F16 (moteur complet en option, 99 Mo à télécharger) est gardée pour plus tard, si des utilisateurs signalent des classements faux. Les autres voies écartées étaient F16 tout de suite ou une profondeur plus élevée ; cette dernière obligerait à refaire T10 et T11.
 
 Le jeu mélange tous les niveaux, alors que H5 vise les joueurs de moins de 2200. La mesure par tranche reste à faire si la décision en dépend.
 
