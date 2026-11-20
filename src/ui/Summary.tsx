@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { PlayerSide, TimeClass } from '../api/chesscom';
 import { estimateElo, playerFeatures, type EloEstimate, type EloModel } from '../analysis/elo';
 import { COUNT_KEYS, summarizeGame, type CountKey } from '../analysis/keyMoments';
@@ -56,6 +57,15 @@ export function Summary({
   preset,
   eloModel = ELO_MODEL,
 }: Props) {
+  // Ne dépend que du rapport : inutile de le recalculer à chaque coup parcouru.
+  const synthesis = useMemo(() => summarizeGame(game, report, openings), [game, report, openings]);
+  const estimates = useMemo(
+    () => ({
+      w: estimateElo(playerFeatures(report, 'w'), timeClass, eloModel.presets[preset]),
+      b: estimateElo(playerFeatures(report, 'b'), timeClass, eloModel.presets[preset]),
+    }),
+    [report, timeClass, eloModel, preset],
+  );
   const link = (
     <p>
       <a href={url} target="_blank" rel="noopener noreferrer">
@@ -74,7 +84,7 @@ export function Summary({
     );
   }
 
-  const { counts, opening, keyMoments } = summarizeGame(game, report, openings);
+  const { counts, opening, keyMoments } = synthesis;
   const keys = COUNT_KEYS.filter(
     (key) => key !== 'unanalysed' || counts.w.unanalysed + counts.b.unanalysed > 0,
   );
@@ -100,10 +110,7 @@ export function Summary({
             <strong>
               {side}, {player.username}
             </strong>{' '}
-            :{' '}
-            {eloText(
-              estimateElo(playerFeatures(report, color), timeClass, eloModel.presets[preset]),
-            )}{' '}
+            : {eloText(estimates[color])}{' '}
             <span className="muted">· classement chess.com {player.rating}</span>
           </li>
         ))}

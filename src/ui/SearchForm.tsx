@@ -1,15 +1,32 @@
 import type { Ref } from 'react';
+import { PRESET_DEPTH, type Preset } from '../analysis/runAnalysis';
 
 interface Props {
   ref: Ref<HTMLInputElement>;
   value: string;
   onChange: (value: string) => void;
+  preset: Preset;
+  onPresetChange: (preset: Preset) => void;
   error?: string;
   busy: boolean;
   onSubmit: (username: string) => void;
 }
 
-export function SearchForm({ ref, value, onChange, error, busy, onSubmit }: Props) {
+const PRESET_OPTIONS: { value: Preset; label: string }[] = [
+  { value: 'standard', label: `Standard (profondeur ${PRESET_DEPTH.standard}, rapide)` },
+  { value: 'deep', label: `Profonde (profondeur ${PRESET_DEPTH.deep}, plus lente)` },
+];
+
+export function SearchForm({
+  ref,
+  value,
+  onChange,
+  preset,
+  onPresetChange,
+  error,
+  busy,
+  onSubmit,
+}: Props) {
   return (
     <form
       className="search"
@@ -42,6 +59,16 @@ export function SearchForm({ ref, value, onChange, error, busy, onSubmit }: Prop
       <p id="username-error" className="field-error" aria-live="polite">
         {error}
       </p>
+      <label className="preset">
+        Analyse
+        <select value={preset} onChange={(event) => onPresetChange(event.target.value as Preset)}>
+          {PRESET_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
     </form>
   );
 }

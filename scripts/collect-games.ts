@@ -6,10 +6,10 @@
 // leurs adversaires, en visitant d'abord les tranches d'Elo et cadences les moins remplies.
 // Reprise : data/games.jsonl et data/collect-state.json sont relus au lancement. La file
 // d'attente contient des pseudos en clair ; elle est supprimée quand les quotas sont atteints.
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { ChessComClient, ChessComError, type GameSummary } from '../src/api/chesscom';
-import { appendJsonl, dataPath, loadSecret, readJsonl } from './data-files';
+import { appendJsonl, dataPath, loadSecret, readJsonl, writeFileAtomic } from './data-files';
 import {
   candidateScore,
   countGame,
@@ -25,7 +25,11 @@ import {
   type Counts,
 } from './dataset';
 
-const USER_AGENT = 'ChessAnalyser-calibration/0.1 (+contact: mada2068.jv@gmail.com)';
+// Contact exigé par l'API : variable d'environnement CHESSANALYSER_CONTACT (adresse e-mail
+// par exemple), sinon l'adresse du dépôt. Aucune donnée personnelle n'est écrite ici.
+const CONTACT =
+  process.env.CHESSANALYSER_CONTACT?.trim() || 'https://github.com/Les-Doubles-A/ChessAnalyser';
+const USER_AGENT = `ChessAnalyser-calibration/0.1 (+contact: ${CONTACT})`;
 const SEED_LISTS = [
   ...['IM', 'FM', 'CM', 'NM', 'WFM'].map((title) => `https://api.chess.com/pub/titled/${title}`),
   ...['US', 'IN', 'FR', 'DE', 'BR', 'GB', 'PH', 'ES'].map(
@@ -73,7 +77,13 @@ function shuffle<T>(items: T[]): T[] {
 async function seedQueue(): Promise<Candidate[]> {
   const queue: Candidate[] = [];
   for (const url of SEED_LISTS) {
-    const response = await politeFetch(url, { headers: { Accept: 'application/json' } });
+    let response: Response;
+    try {
+      response = await politeFetch(url, { headers: { Accept: 'application/json' } });
+    } catch (error) {
+      console.warn(`Liste de départ indisponible : ${url} (${String(error)})`);
+      continue;
+    }
     const body = (await response.json().catch(() => null)) as { players?: unknown } | null;
     const players = Array.isArray(body?.players)
       ? body.players.filter((p): p is string => typeof p === 'string')
@@ -83,6 +93,11 @@ async function seedQueue(): Promise<Candidate[]> {
       continue;
     }
     for (const username of shuffle(players).slice(0, SEEDS_PER_LIST)) queue.push({ username });
+  }
+  if (queue.length === 0) {
+    throw new Error(
+      'Aucune liste de départ disponible : chess.com injoignable ? Relancer plus tard.',
+    );
   }
   return queue;
 }
@@ -113,7 +128,7 @@ const visited = new Set(state.visited);
 const queued = new Set(queue.map((c) => c.username.toLowerCase()));
 
 const saveState = () =>
-  writeFileSync(STATE_FILE, JSON.stringify({ queue, visited: [...visited] } satisfies State));
+  writeFileAtomic(STATE_FILE, JSON.stringify({ queue, visited: [...visited] } satisfies State));
 
 process.on('SIGINT', () => {
   saveState();
@@ -180,6 +195,9 @@ while (totalRemaining(counts) > 0 && players < maxPlayers && added < maxGames) {
   if (queue.length >= MAX_QUEUE) {
     const useful = queue.filter((c) => candidateScore(c, counts) > 0);
     queue.splice(0, queue.length, ...useful);
+    // Les joueurs écartés doivent pouvoir revenir par un autre adversaire (autre cadence).
+    queued.clear();
+    for (const c of queue) queued.add(c.username.toLowerCase());
   }
   for (const game of games) {
     if (queue.length >= MAX_QUEUE) break;

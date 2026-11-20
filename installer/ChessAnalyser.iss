@@ -1,7 +1,7 @@
 ﻿; Installeur Inno Setup de ChessAnalyser. Compilation : iscc installer\ChessAnalyser.iss
-; Le setup est cree dans installer\Output\ChessAnalyser-Setup-0.1.1.exe
+; Le setup est cree dans installer\Output\ChessAnalyser-Setup-0.1.2.exe
 #define MyAppName "ChessAnalyser"
-#define MyAppVersion "0.1.1"
+#define MyAppVersion "0.1.2"
 #define MyAppURL "https://github.com/Les-Doubles-A/ChessAnalyser"
 
 [Setup]

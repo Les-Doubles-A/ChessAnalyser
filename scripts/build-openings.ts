@@ -6,7 +6,10 @@
 import { writeFileSync } from 'node:fs';
 import { Chess } from 'chess.js';
 
-const BASE = 'https://raw.githubusercontent.com/lichess-org/chess-openings/master';
+// Commit épinglé (master au 2026-10-26, date de génération de openings.json) : une
+// régénération reproduit la base versionnée. Pour la mettre à jour, changer ce SHA.
+const COMMIT = 'a6189a30dc273ccb21fc2536a9a2fefd5592a67a';
+const BASE = `https://raw.githubusercontent.com/lichess-org/chess-openings/${COMMIT}`;
 const FILES = ['a.tsv', 'b.tsv', 'c.tsv', 'd.tsv', 'e.tsv'];
 const OUTPUT = new URL('../src/data/openings.json', import.meta.url);
 

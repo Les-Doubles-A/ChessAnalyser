@@ -9,22 +9,27 @@ export interface FakeReply {
 
 /**
  * Remplace Stockfish par un faux moteur UCI scripté (Web Worker) : chaque FEN reçoit
- * l'évaluation prévue, après `delayMs`. Les FEN absents valent `cp 0`.
+ * l'évaluation prévue, après `delayMs`. Les FEN absents valent `cp 0`. La profondeur
+ * demandée (`go depth N`) est renvoyée telle quelle ; à partir de 18 (analyse profonde),
+ * `deepTable` remplace `table` quand il prévoit le FEN, ce qui prouve que la profondeur a
+ * bien été transmise au moteur.
  */
 export async function mockEngine(
   page: Page,
   table: Record<string, FakeReply>,
-  options: { delayMs?: number } = {},
+  options: { delayMs?: number; deepTable?: Record<string, FakeReply> } = {},
 ) {
   const source = `
     const table = ${JSON.stringify(table)};
+    const deepTable = ${JSON.stringify(options.deepTable ?? {})};
     const delay = ${options.delayMs ?? 0};
     let fen = '';
+    let depth = 0;
     let timer = null;
     let reply = null;
     const finish = () => {
       timer = null;
-      postMessage('info depth 14 seldepth 14 multipv 1 score ' + reply.score + ' pv ' + reply.best);
+      postMessage('info depth ' + depth + ' seldepth ' + depth + ' multipv 1 score ' + reply.score + ' pv ' + reply.best);
       postMessage('bestmove ' + reply.best);
     };
     onmessage = (event) => {
@@ -33,7 +38,8 @@ export async function mockEngine(
       else if (cmd === 'isready') postMessage('readyok');
       else if (cmd.startsWith('position fen ')) fen = cmd.slice(13);
       else if (cmd.startsWith('go')) {
-        reply = table[fen] || { score: 'cp 0', best: 'a2a3' };
+        depth = Number((/depth (\\d+)/.exec(cmd) || [])[1]) || 1;
+        reply = (depth >= 18 && deepTable[fen]) || table[fen] || { score: 'cp 0', best: 'a2a3' };
         timer = setTimeout(finish, delay);
       } else if (cmd === 'stop' && timer) {
         clearTimeout(timer);
@@ -57,3 +63,10 @@ export function foolsMateTable(pgn: string): Record<string, FakeReply> {
     [fens[3]!]: { score: 'mate 3', best: 'd8h4' }, // noirs au trait, mat : -M3
   };
 }
+
+/**
+ * Délai par position pour les tests qui observent une progression intermédiaire puis
+ * annulent : 4 positions à évaluer laissent environ 4 s pendant lesquelles 1 à 3 sont
+ * faites, assez pour ne pas manquer cette fenêtre quand la machine est chargée.
+ */
+export const SLOW_MS = 1500;

@@ -1,5 +1,13 @@
 // Dialogue UCI commun au Web Worker (navigateur) et au moteur Node (scripts, tests).
-import { abortError, EngineStartError, type Engine, type PositionEval, type Score } from './types';
+import {
+  abortError,
+  EngineStartError,
+  EngineStoppedError,
+  EngineTimeoutError,
+  type Engine,
+  type PositionEval,
+  type Score,
+} from './types';
 
 export interface UciTransport {
   send(command: string): void;
@@ -50,6 +58,11 @@ export function sideToMove(fen: string): 'w' | 'b' {
 }
 
 const START_TIMEOUT_MS = 20000;
+/**
+ * Délai maximal d'une évaluation. Très au-delà d'une recherche à profondeur 18 (≈ 1 s sous
+ * Node) : il ne sert qu'à détecter un moteur figé, qui sinon bloquerait l'analyse sans fin.
+ */
+const EVAL_TIMEOUT_MS = 120000;
 
 interface Pending {
   fen: string;
@@ -71,9 +84,14 @@ export class UciEngine implements Engine {
   private waiters: { token: string; resolve: () => void }[] = [];
   private readonly failure: Promise<never>;
   private rejectFailure!: (error: Error) => void;
+  private readonly evalTimeoutMs: number;
 
-  constructor(transport: UciTransport, options: { hashMb?: number; timeoutMs?: number } = {}) {
+  constructor(
+    transport: UciTransport,
+    options: { hashMb?: number; timeoutMs?: number; evalTimeoutMs?: number } = {},
+  ) {
     this.transport = transport;
+    this.evalTimeoutMs = options.evalTimeoutMs ?? EVAL_TIMEOUT_MS;
     this.failure = new Promise<never>((_, reject) => {
       this.rejectFailure = reject;
     });
@@ -86,7 +104,9 @@ export class UciEngine implements Engine {
 
   /** Met le moteur hors service (erreur fatale du worker) : toute attente échoue aussitôt. */
   fail(error: Error): void {
+    const pending = this.pending;
     this.pending = undefined;
+    pending?.reject(error);
     this.rejectFailure(error);
   }
 
@@ -105,24 +125,43 @@ export class UciEngine implements Engine {
             reject(abortError());
             return;
           }
-          const pending: Pending = { fen, aborted: false, resolve, reject };
-          this.pending = pending;
-          signal?.addEventListener(
-            'abort',
-            () => {
-              if (this.pending !== pending) return;
-              pending.aborted = true;
-              this.transport.send('stop');
+          const onAbort = () => {
+            if (this.pending !== pending) return;
+            pending.aborted = true;
+            this.transport.send('stop');
+          };
+          const timer = setTimeout(() => {
+            if (this.pending === pending) this.fail(new EngineTimeoutError());
+          }, this.evalTimeoutMs);
+          // Le même signal sert à toutes les positions d'une partie : l'écouteur est retiré
+          // dès la fin de l'évaluation pour ne pas s'accumuler.
+          const settle = () => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+          };
+          const pending: Pending = {
+            fen,
+            aborted: false,
+            resolve: (value) => {
+              settle();
+              resolve(value);
             },
-            { once: true },
-          );
+            reject: (reason) => {
+              settle();
+              reject(reason);
+            },
+          };
+          this.pending = pending;
+          signal?.addEventListener('abort', onAbort, { once: true });
           this.transport.send(`position fen ${fen}`);
           this.transport.send(`go depth ${depth}`);
         }),
     );
   }
 
+  /** Arrête le moteur ; les évaluations en cours ou en file échouent au lieu d'attendre. */
   terminate(): void {
+    this.fail(new EngineStoppedError());
     this.transport.terminate();
   }
 

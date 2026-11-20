@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FOOLS_MATE_PGN } from '../fixtures/chesscom';
-import { foolsMateTable, mockEngine } from './fakeEngine';
+import { foolsMateTable, mockEngine, SLOW_MS } from './fakeEngine';
 import { mockChessCom, searchFor } from './helpers';
 
 async function openFoolsMate(page: Page) {
@@ -20,7 +20,7 @@ async function whiteHeight(page: Page): Promise<number> {
 
 test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   test('AC-F3-1 : l’analyse démarre seule et la progression avance', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 600 });
+    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: SLOW_MS });
     await openFoolsMate(page);
     await expect(page.getByText(/Analyse : [1-3] \/ 5 positions/)).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('Analyse terminée (Standard, profondeur 14).')).toBeVisible({
@@ -55,7 +55,7 @@ test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   });
 
   test('AC-F3-3 : annuler arrête vite et garde les évaluations obtenues', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 700 });
+    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: SLOW_MS });
     await openFoolsMate(page);
     await expect(page.getByText(/Analyse : [1-3] \/ 5 positions/)).toBeVisible({ timeout: 15000 });
     const t0 = Date.now();
@@ -81,12 +81,46 @@ test.describe('Analyse moteur (F3) avec un faux moteur', () => {
   });
 
   test('P3 : analyse profonde', async ({ page }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 50 });
+    const table = foolsMateTable(FOOLS_MATE_PGN);
+    const startFen = Object.keys(table)[0]!;
+    // Position de départ : +1.5 à la profondeur 14, +3.0 seulement si `go depth 18` est envoyé.
+    await mockEngine(page, table, {
+      delayMs: 50,
+      deepTable: { [startFen]: { score: 'cp 300', best: 'e2e4' } },
+    });
     await openFoolsMate(page);
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +1.5', { timeout: 15000 });
     await page.getByRole('button', { name: 'Analyse profonde' }).click();
     await expect(page.getByText('Analyse terminée (profonde, profondeur 18).')).toBeVisible({
       timeout: 15000,
     });
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +3.0');
+    await expect(page.getByRole('button', { name: 'Analyse profonde' })).toHaveCount(0);
+  });
+
+  test('E1 : préréglage choisi à l’accueil, mémorisé, et appliqué dès l’ouverture', async ({
+    page,
+  }) => {
+    const table = foolsMateTable(FOOLS_MATE_PGN);
+    const startFen = Object.keys(table)[0]!;
+    await mockEngine(page, table, {
+      deepTable: { [startFen]: { score: 'cp 300', best: 'e2e4' } },
+    });
+    await mockChessCom(page);
+    await page.goto('/');
+    const preset = page.getByLabel('Analyse');
+    await expect(preset).toHaveValue('standard');
+    await preset.selectOption('deep');
+    await page.reload();
+    await expect(page.getByLabel('Analyse')).toHaveValue('deep');
+
+    await searchFor(page, 'testeur');
+    await page.getByRole('button', { name: /pressé/ }).click();
+    await expect(page.getByText('Analyse terminée (profonde, profondeur 18).')).toBeVisible({
+      timeout: 15000,
+    });
+    // Aucune analyse Standard n'a eu lieu : l'évaluation affichée est celle de la profondeur 18.
+    await expect(bar(page)).toHaveAttribute('aria-label', 'Évaluation : +3.0');
     await expect(page.getByRole('button', { name: 'Analyse profonde' })).toHaveCount(0);
   });
 });
@@ -112,6 +146,9 @@ test.describe('Barre et courbe d’évaluation (F4)', () => {
     await expect(indicator(page)).toHaveText('Demi-coup 3 sur 4');
     await expect(bar(page)).toContainText('-M3');
     expect(await whiteHeight(page)).toBe(0);
+    // Le libellé tient dans la barre (elle rogne ce qui dépasse).
+    const label = page.locator('.eval-label');
+    expect(await label.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   });
 
   test('AC-F4-3 : un clic sur la courbe déplace l’échiquier', async ({ page }) => {
@@ -119,6 +156,11 @@ test.describe('Barre et courbe d’évaluation (F4)', () => {
     const box = (await svg.boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.5, box.y + 10);
     await expect(indicator(page)).toHaveText('Demi-coup 2 sur 4');
+    // Les marges latérales mènent aux extrémités de la partie.
+    await page.mouse.click(box.x + box.width - 1, box.y + 10);
+    await expect(indicator(page)).toHaveText('Demi-coup 4 sur 4');
+    await page.mouse.click(box.x + 1, box.y + 10);
+    await expect(indicator(page)).toHaveText('Position de départ');
   });
 
   test('AC-F4-5 : libellé de la courbe et symboles des marqueurs', async ({ page }) => {

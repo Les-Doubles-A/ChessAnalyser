@@ -12,6 +12,8 @@ export default tseslint.config(
       'test-results',
       'product',
       'public/engine',
+      'desktop/target',
+      'desktop/engine',
     ],
   },
   js.configs.recommended,

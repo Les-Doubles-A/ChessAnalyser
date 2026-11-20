@@ -26,9 +26,12 @@ export function createWorkerEngine(): UciEngine {
     terminate: () => worker.terminate(),
   };
   const engine = new UciEngine(transport);
-  worker.onerror = (event) => {
-    console.error('Erreur du moteur', event.message);
-    engine.fail(new EngineStartError(event.message));
+  const crash = (message: string) => {
+    console.error('Erreur du moteur', message);
+    engine.fail(new EngineStartError(message));
+    worker.terminate();
   };
+  worker.onerror = (event) => crash(event.message);
+  worker.onmessageerror = () => crash('message illisible du moteur');
   return engine;
 }

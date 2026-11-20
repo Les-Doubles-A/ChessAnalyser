@@ -16,6 +16,8 @@ interface Props {
 
 const W = 600;
 const H = 120;
+/** Marge de chaque côté : les symboles (« ?? ») des premier et dernier coups restent entiers. */
+const PAD = 12;
 
 export function EvalGraph({ evals, moves, plies, position, onSelect }: Props) {
   const total = plies.length + 1;
@@ -36,8 +38,11 @@ export function EvalGraph({ evals, moves, plies, position, onSelect }: Props) {
 
   const onClick = (event: MouseEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
-    const ratio = (event.clientX - box.left) / box.width;
-    onSelect(Math.round(Math.max(0, Math.min(1, ratio)) * (total - 1)));
+    if (!(box.width > 0)) return;
+    // Abscisse dans le repère du viewBox (marges comprises), puis dans la courbe.
+    const svgX = ((event.clientX - box.left) / box.width) * (W + 2 * PAD) - PAD;
+    const ratio = Math.max(0, Math.min(1, svgX / W));
+    onSelect(Math.round(ratio * (total - 1)));
   };
 
   const markers = moves.flatMap((move) =>
@@ -46,7 +51,7 @@ export function EvalGraph({ evals, moves, plies, position, onSelect }: Props) {
 
   return (
     <div className="eval-graph" role="group" aria-label={`Courbe d’évaluation, ${total} positions`}>
-      <svg viewBox={`0 0 ${W} ${H + 14}`} onClick={onClick}>
+      <svg viewBox={`${-PAD} 0 ${W + 2 * PAD} ${H + 14}`} onClick={onClick}>
         <rect className="graph-bg" x={0} y={0} width={W} height={H} />
         {area && <polygon className="graph-area" points={area} />}
         <line className="graph-mid" x1={0} x2={W} y1={H / 2} y2={H / 2} />

@@ -39,11 +39,12 @@ function toCentipawns(win: number): number {
 /** Perte moyenne par défaut quand aucun coup n'a été joué en position disputée. */
 const NO_BALANCED_LOSS = 10;
 
-/** Variables d'un joueur ; null si l'analyse est incomplète ou la précision indisponible. */
+/** Variables d'un joueur ; null si l'analyse est incomplète. */
 export function playerFeatures(report: GameReport, color: 'w' | 'b'): PlayerFeatures | null {
   if (!report.complete) return null;
-  const accuracy = color === 'w' ? report.accuracy.white : report.accuracy.black;
-  if (accuracy === null) return null;
+  // Analyse complète : la précision n'est nulle que si ce camp n'a joué aucun coup, donc
+  // `moves` vaut 0 et l'estimation répond « trop courte » (AC-F6-2).
+  const accuracy = (color === 'w' ? report.accuracy.white : report.accuracy.black) ?? 0;
   const own = report.moves.filter(
     (m): m is MoveAnalysis => m !== undefined && m.color === color && m.category !== 'book',
   );
@@ -164,13 +165,13 @@ export function estimateElo(
   if (features.moves < MIN_NON_BOOK_MOVES) return { kind: 'too-short' };
   if (!model) return { kind: 'unavailable' };
   const raw = predict(model, featureVector(features, timeClass));
-  const low = roundTo50(raw + model.lower);
-  const high = roundTo50(raw + model.upper);
   return {
     kind: 'estimate',
     value: roundTo50(raw),
-    low,
-    high,
-    confidence: confidenceOf(low, high),
+    low: roundTo50(raw + model.lower),
+    high: roundTo50(raw + model.upper),
+    // Largeur avant bornage : borner à [100, 3200] rétrécirait l'intervalle aux extrêmes,
+    // là où le modèle se trompe le plus, et gonflerait la confiance affichée.
+    confidence: confidenceOf(raw + model.lower, raw + model.upper),
   };
 }

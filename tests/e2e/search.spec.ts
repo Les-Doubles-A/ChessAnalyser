@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ARCHIVES_URL } from '../fixtures/chesscom';
+import { ARCHIVES_URL, MONTH_URLS } from '../fixtures/chesscom';
 import { mockChessCom, searchFor } from './helpers';
 
 test.describe('Recherche et liste des parties (F1)', () => {
@@ -107,6 +107,50 @@ test.describe('Recherche et liste des parties (F1)', () => {
     await expect(page.getByRole('heading', { name: 'Parties de testeur' })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel('Pseudo chess.com')).toHaveValue('testeur');
+  });
+
+  test('un pseudo inconnu n’efface pas le dernier pseudo mémorisé', async ({ page }) => {
+    await mockChessCom(page); // les URL non prévues, dont celles d'« inconnu », répondent 404
+    await page.goto('/');
+    await searchFor(page, 'testeur');
+    await expect(page.getByRole('heading', { name: 'Parties de testeur' })).toBeVisible();
+    await searchFor(page, 'inconnu');
+    await expect(
+      page.getByText('Aucun joueur chess.com ne porte le pseudo « inconnu ».'),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel('Pseudo chess.com')).toHaveValue('testeur');
+  });
+
+  test('le filtre de cadence repart sur « Toutes » à chaque recherche', async ({ page }) => {
+    await mockChessCom(page);
+    await page.goto('/');
+    await searchFor(page, 'testeur');
+    await page.getByLabel('Cadence').selectOption('blitz');
+    await expect(page.getByRole('button', { name: /^Partie du/ })).toHaveCount(1);
+
+    await searchFor(page, 'testeur');
+    await expect(page.getByLabel('Cadence')).toHaveValue('all');
+    await expect(page.getByRole('button', { name: /^Partie du/ })).toHaveCount(3);
+  });
+
+  test('trois derniers mois vides : « Mois précédent » reste proposé', async ({ page }) => {
+    const month = (m: string) => `https://api.chess.com/pub/player/testeur/games/2026/${m}`;
+    const empty = [{ status: 200, body: { games: [] } }];
+    await mockChessCom(page, {
+      [ARCHIVES_URL]: [
+        { status: 200, body: { archives: [MONTH_URLS[0], month('10'), month('11'), month('12')] } },
+      ],
+      [month('10')]: empty,
+      [month('11')]: empty,
+      [month('12')]: empty,
+    });
+    await page.goto('/');
+    await searchFor(page, 'testeur');
+
+    await expect(page.getByText('Aucune partie publique trouvée.')).toBeVisible();
+    await page.getByRole('button', { name: 'Mois précédent' }).click();
+    await expect(page.getByRole('button', { name: /cassé/ })).toBeVisible();
   });
 
   test('AC-X-1 : mention de non-affiliation', async ({ page }) => {

@@ -77,7 +77,9 @@ export function outcomeFor(side: PlayerSide): Outcome {
 
 /** Nombre de coups complets, d'après la numérotation du PGN. */
 export function countMoves(pgn: string): number {
-  const movetext = pgn.replace(/\[[^\]]*\]/g, ' ').replace(/\{[^}]*\}/g, ' ');
+  // Commentaires d'abord (ils peuvent contenir « [%clk …] »), puis les lignes d'en-tête
+  // entières, dont la valeur peut contenir « ] » ou des nombres suivis d'un point.
+  const movetext = pgn.replace(/\{[^}]*\}/g, ' ').replace(/^\s*\[.*\]\s*$/gm, ' ');
   let max = 0;
   for (const match of movetext.matchAll(/(\d+)\.(?!\.)/g)) {
     max = Math.max(max, Number(match[1]));
@@ -135,8 +137,10 @@ export class ChessComClient {
   }
 
   /**
-   * Charge le mois le plus récent qui contient des parties, en remontant au plus
-   * quelques mois vides.
+   * Charge le mois le plus récent qui contient des parties, en examinant au plus
+   * MAX_EMPTY_MONTHS_SKIPPED mois. Si tous sont vides, `index` désigne le plus ancien mois
+   * examiné, pour que l'utilisateur puisse continuer à remonter (« Mois précédent ») ;
+   * il vaut -1 seulement sans aucune archive.
    */
   async getLatestGames(
     username: string,
@@ -147,7 +151,7 @@ export class ChessComClient {
       const games = await this.getMonth(archives[index]!);
       if (games.length > 0) return { archives, index, games };
     }
-    return { archives, index: -1, games: [] };
+    return { archives, index: archives.length > 0 ? oldest : -1, games: [] };
   }
 
   private getJson(url: string): Promise<unknown> {
@@ -190,8 +194,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/** Archive mensuelle : https://api.chess.com/pub/player/<pseudo>/games/<AAAA>/<MM>. */
+const ARCHIVE_URL_RE = /^https:\/\/api\.chess\.com\/pub\/player\/[^/?#]+\/games\/\d{4}\/\d{2}$/;
+
 function isArchiveUrl(value: unknown): value is string {
-  return typeof value === 'string' && value.startsWith(API_BASE);
+  return typeof value === 'string' && ARCHIVE_URL_RE.test(value);
 }
 
 const TIME_CLASSES: readonly string[] = ['bullet', 'blitz', 'rapid', 'daily'];

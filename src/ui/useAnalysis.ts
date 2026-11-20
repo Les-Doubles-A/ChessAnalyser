@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PRESET_DEPTH, runAnalysis, type Preset } from '../analysis/runAnalysis';
 import type { ParsedGame } from '../chess/game';
-import { EngineStartError, type Engine, type PositionEval } from '../engine/types';
+import {
+  EngineStartError,
+  EngineTimeoutError,
+  type Engine,
+  type PositionEval,
+} from '../engine/types';
 import { createWorkerEngine } from '../engine/worker-engine';
 
 let shared: Engine | undefined;
@@ -12,8 +17,14 @@ export function getEngine(): Engine {
   return shared;
 }
 
-function dropEngine() {
-  shared?.terminate();
+/**
+ * Abandonne le moteur partagé s'il est hors service (plantage, démarrage raté, moteur figé),
+ * pour que la demande suivante en crée un neuf. Sans effet si `engine` a déjà été remplacé.
+ */
+export function releaseFailedEngine(engine: Engine | undefined, error: unknown): void {
+  const dead = error instanceof EngineStartError || error instanceof EngineTimeoutError;
+  if (!dead || shared === undefined || (engine !== undefined && engine !== shared)) return;
+  shared.terminate();
   shared = undefined;
 }
 
@@ -31,11 +42,14 @@ export interface AnalysisState {
   error?: string;
 }
 
-export function useAnalysis(game: ParsedGame) {
+/** @param initialPreset Préréglage de la première analyse, lancée dès l'ouverture de la partie. */
+export function useAnalysis(game: ParsedGame, initialPreset: Preset = 'standard') {
   const total = game.plies.length + 1;
+  // Seule la valeur à l'ouverture compte : la changer ensuite ne relance pas l'analyse.
+  const initialRef = useRef(initialPreset);
   const [state, setState] = useState<AnalysisState>(() => ({
     status: 'running',
-    preset: 'standard',
+    preset: initialPreset,
     shownPreset: null,
     evals: [],
     done: 0,
@@ -61,8 +75,9 @@ export function useAnalysis(game: ParsedGame) {
         total,
       });
 
+      let engine: Engine | undefined;
       try {
-        const engine = getEngine();
+        engine = getEngine();
         const result = await runAnalysis(game, engine, {
           depth: PRESET_DEPTH[preset],
           signal: controller.signal,
@@ -81,9 +96,9 @@ export function useAnalysis(game: ParsedGame) {
           setState((s) => ({ ...s, status: 'cancelled' }));
         }
       } catch (error) {
+        releaseFailedEngine(engine, error);
         if (controllerRef.current !== controller) return;
         console.error(error);
-        if (error instanceof EngineStartError) dropEngine();
         setState((s) => ({
           ...s,
           status: 'error',
@@ -99,7 +114,7 @@ export function useAnalysis(game: ParsedGame) {
 
   useEffect(() => {
     completeRef.current = null;
-    void start('standard');
+    void start(initialRef.current);
     return () => controllerRef.current?.abort();
   }, [start]);
 

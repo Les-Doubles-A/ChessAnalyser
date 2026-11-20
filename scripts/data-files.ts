@@ -1,6 +1,13 @@
 // Fichiers locaux du jeu de calibration, tous dans data/ (exclu de git, jamais publié).
 import { randomBytes } from 'node:crypto';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 export const DATA_DIR = fileURLToPath(new URL('../data/', import.meta.url));
@@ -33,12 +40,24 @@ export function writeJsonl(name: string, rows: unknown[]) {
   writeFileSync(dataPath(name), rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
 }
 
+/**
+ * Écrit un fichier entier via un fichier temporaire puis un renommage : un arrêt brutal
+ * laisse l'ancienne version intacte au lieu d'un fichier tronqué.
+ */
+export function writeFileAtomic(path: string, content: string) {
+  mkdirSync(DATA_DIR, { recursive: true });
+  const temporary = `${path}.tmp`;
+  writeFileSync(temporary, content);
+  renameSync(temporary, path);
+}
+
 /** Clé locale des pseudonymes (HMAC), créée au premier lancement et jamais publiée. */
 export function loadSecret(): string {
   const path = dataPath('secret.txt');
   if (!existsSync(path)) {
     mkdirSync(DATA_DIR, { recursive: true });
-    writeFileSync(path, randomBytes(32).toString('hex'));
+    // Lisible par le seul propriétaire sous Unix (sans effet sous Windows).
+    writeFileSync(path, randomBytes(32).toString('hex'), { mode: 0o600 });
   }
   return readFileSync(path, 'utf8').trim();
 }

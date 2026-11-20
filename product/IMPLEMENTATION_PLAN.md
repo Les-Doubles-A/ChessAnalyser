@@ -216,7 +216,7 @@
 - **Tests** : `npm run test:all`, scénarios M1 à M5.
 - **Terminé quand** : le tableau de validation de RISKS_AND_TESTS.md section 6 est entièrement coché, avec la preuve de chaque ligne dans `docs/validation.md`.
 - **Couvre** : F3, AC-F3-5, AC-X-2, AC-X-3
-- **Statut** : à faire
+- **Statut** : en partie fait (2026-11-20), preuves dans `docs/validation.md`. Fait : CSP du build, `privacy.spec.ts` (étapes 3), chronométrage réel dans Chromium et Firefox (étape 1 : Standard 4,8 à 7,3 s, H6 validée, D4 inchangé), comparaison sur 50 parties (étape 2 : accord 80,8 %, **H5 non validée au seuil de 90 %**, décision F16 à prendre), 360 px et clavier automatisés, M1, M3 et M4 automatisés contre la vraie API. Reste : lecteur d'écran, revue M2 par l'utilisateur sur ses parties, test avec 5 testeurs.
 
 ### T13 : Variantes (F10 avancée à la demande de l'utilisateur)
 

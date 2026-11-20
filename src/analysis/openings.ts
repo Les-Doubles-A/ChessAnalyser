@@ -53,8 +53,13 @@ let loaded: Promise<OpeningIndex> | undefined;
 
 /** Charge la base à la demande (≈ 95 Ko compressés) pour alléger le premier affichage. */
 export function loadOpeningIndex(): Promise<OpeningIndex> {
-  loaded ??= import('../data/openings.json').then((module) =>
-    createOpeningIndex(module.default as OpeningData),
+  loaded ??= import('../data/openings.json').then(
+    (module) => createOpeningIndex(module.default as OpeningData),
+    (error: unknown) => {
+      // Échec réseau passager : on ne garde pas la promesse rejetée, le prochain appel réessaie.
+      loaded = undefined;
+      throw error;
+    },
   );
   return loaded;
 }

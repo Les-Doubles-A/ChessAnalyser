@@ -24,6 +24,22 @@ export class EngineStartError extends Error {
   }
 }
 
+/** Le moteur a démarré mais ne répond plus (aucun `bestmove` dans le délai imparti). */
+export class EngineTimeoutError extends Error {
+  constructor() {
+    super('Le moteur d’analyse ne répond plus.');
+    this.name = 'EngineTimeoutError';
+  }
+}
+
+/** Le moteur a été arrêté volontairement : les évaluations en attente échouent. */
+export class EngineStoppedError extends Error {
+  constructor() {
+    super('Le moteur d’analyse a été arrêté.');
+    this.name = 'EngineStoppedError';
+  }
+}
+
 export function abortError(): DOMException {
   return new DOMException('Analyse annulée', 'AbortError');
 }

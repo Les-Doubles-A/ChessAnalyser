@@ -16,7 +16,7 @@
 | F7 | Synthèse de la partie | MVP | Donne la réponse en un coup d'œil ; sans elle, il faut parcourir 80 demi-coups |
 | F8 | Import d'un PGN collé ou d'un fichier | V2 | Repli si l'API chess.com change (R1) |
 | F9 | Cache local des analyses et historique (IndexedDB) | V2 | Confort ; le parcours fonctionne sans |
-| F10 | Exploration libre : jouer des variantes, moteur en direct multi-lignes | V2 | Utile après validation ; risque d'usage pendant une partie (R8) |
+| F10 | Exploration libre : jouer des variantes, moteur en direct multi-lignes | V2 (variantes livrées en T13, sans multi-lignes) | Utile après validation ; risque d'usage pendant une partie (R8) |
 | F11 | Statistiques sur plusieurs parties, Elo agrégé sur 10 parties | V2 | Demande plusieurs analyses ; repli de H7 |
 | F12 | Exercices tirés de ses propres gaffes | V2 | Forte valeur d'entraînement, mais après le MVP |
 | F13 | Coups « brillant », « très bon », « occasion manquée » | V2 | Heuristiques (sacrifice, coup unique) à concevoir et calibrer |
@@ -56,7 +56,7 @@
 
 | ID | Écran / surface | Rôle | État vide | Chargement | Erreur | Succès |
 |---|---|---|---|---|---|---|
-| E1 | Accueil et recherche | Saisir le pseudo, choisir le préréglage | Champ vide, exemple de pseudo en aide | Bouton désactivé, indicateur « Recherche… » | Message sous le champ, focus remis dans le champ | Passage à E2 |
+| E1 | Accueil et recherche | Saisir le pseudo, choisir le préréglage (mémorisé ; la profonde peut aussi se lancer en E3) | Champ vide, exemple de pseudo en aide | Bouton désactivé, indicateur « Recherche… » | Message sous le champ, focus remis dans le champ | Passage à E2 |
 | E2 | Liste des parties | Choisir une partie, filtrer par cadence, mois précédent | « Aucune partie publique trouvée » | Squelette de liste | Message et bouton « Réessayer » | Liste triée |
 | E3 | Vue d'analyse | Échiquier, barre, courbe, liste des coups, panneau du coup courant | Sans objet (toujours une partie) | Progression « Analyse : 34 / 81 positions », bouton « Annuler » | Moteur indisponible : message, navigation conservée | Toutes les positions évaluées |
 | E4 | Panneau de synthèse (dans E3) | Précision, compteurs, Elo, ouverture, moments clés | « Disponible à la fin de l'analyse » | Idem | « Analyse incomplète : synthèse partielle » | Synthèse complète |
@@ -82,7 +82,7 @@
 
 - **Objectif** : rejouer la partie coup par coup.
 - **Comportement attendu** : échiquier orienté du côté du joueur recherché ; dernier coup surligné ; boutons « Début », « Précédent », « Suivant », « Fin » ; flèches gauche et droite du clavier, touches Début et Fin ; clic sur un coup de la liste.
-- **Règles et limites** : navigation par demi-coup ; aucune saisie de coup par l'utilisateur dans le MVP (exploration libre en V2, F10).
+- **Règles et limites** : navigation par demi-coup ; aucune saisie de coup par l'utilisateur dans le MVP (exploration libre en V2, F10, livrée depuis en T13).
 - **Erreurs et cas limites** : PGN illisible ; fin de partie atteinte ; partie sans coup.
 - **Critères d'acceptation** :
   - **AC-F2-1** : Étant donné une partie où le joueur recherché avait les noirs, quand elle s'ouvre, alors les pièces noires sont en bas de l'échiquier et la position initiale est affichée.
@@ -130,7 +130,7 @@
   |---|---|---|
   | Livre | Position atteinte présente dans la base d'ouvertures, tous les coups précédents aussi, et perte < 5 (la base nomme aussi des pièges comme le « Fool's Mate ») | L |
   | Forcé | Un seul coup légal | □ |
-  | Meilleur | Coup joué = meilleur coup du moteur | `!` vert |
+  | Meilleur | Coup joué = meilleur coup du moteur | `!` bleu (le vert est réservé à Excellent) |
   | Excellent | Perte < 2 | aucun |
   | Bon | 2 ≤ perte < 5 | aucun |
   | Imprécision | 5 ≤ perte < 10 | `?!` |
@@ -152,7 +152,7 @@
 ### F6 : Estimation d'Elo par partie
 
 - **Objectif** : dire à quel niveau chaque joueur a joué sur cette partie, avec une marge d'erreur honnête.
-- **Comportement attendu** : modèle de régression **[Reco]** calibré hors ligne sur au moins 2000 parties chess.com publiques classées (`rated`, `rules = chess`), analysées avec le même moteur et le même préréglage. Variables : précision du joueur, perte moyenne, taux d'erreurs et de gaffes, cadence. Sortie : estimation arrondie à 50 points et intervalle à 80 % issu des quantiles des résidus. Coefficients versionnés dans `elo-model.json`, un jeu par préréglage. Affichage : « Niveau estimé sur cette partie : ≈ 1450 (1150 à 1750), confiance faible », à côté du classement réel chess.com du joueur.
+- **Comportement attendu** : modèle de régression **[Reco]** calibré hors ligne sur au moins 2000 parties chess.com publiques classées (`rated`, `rules = chess`), analysées avec le même moteur et le même préréglage. Variables : précision du joueur, perte moyenne, taux d'erreurs et de gaffes, cadence (implémentation T11 : 15 variables, liste dans `FEATURE_NAMES` de `src/analysis/elo.ts`). Sortie : estimation arrondie à 50 points et intervalle à 80 % issu des quantiles des résidus ; la confiance affichée se calcule sur la largeur de l'intervalle avant le bornage à [100, 3200]. Coefficients versionnés dans `elo-model.json`, un jeu par préréglage (seul Standard est calibré à ce jour). Affichage : « Niveau estimé sur cette partie : ≈ 1450 (1150 à 1750), confiance faible », à côté du classement réel chess.com du joueur.
 - **Règles et limites** : estimation bornée à [100, 3200] ; nécessite au moins 10 coups hors livre du joueur et une analyse complète.
 - **Erreurs et cas limites** : partie courte ; analyse incomplète ; cadence absente du jeu de calibration (repli sur le modèle toutes cadences).
 - **Critères d'acceptation** :

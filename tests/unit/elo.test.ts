@@ -9,9 +9,11 @@ import {
   MIN_NON_BOOK_MOVES,
   playerFeatures,
   roundTo50,
+  type EloModel,
   type PlayerFeatures,
   type PresetModel,
 } from '../../src/analysis/elo';
+import eloModelJson from '../../src/data/elo-model.json';
 import { buildReport } from '../../src/analysis/report';
 import { parseGame } from '../../src/chess/game';
 import type { PositionEval } from '../../src/engine/types';
@@ -160,5 +162,44 @@ describe('outils de calibration', () => {
     expect(quantile([1, 2, 3, 4, 5], 0.5)).toBe(3);
     expect(quantile([0, 10], 0.1)).toBe(1);
     expect(median([5, 1, 3, 2])).toBe(2.5);
+  });
+});
+
+describe('corrections de l’audit (Elo)', () => {
+  it('confiance calculée avant le bornage : un intervalle large reste « faible » aux extrêmes', () => {
+    // Intervalle du modèle réel (-691 à +711) : brut à -100, l'intervalle borné irait de
+    // 100 à 600 et passerait à tort pour une confiance « moyenne ».
+    const wide: PresetModel = {
+      ...model,
+      coefficients: [-100, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      lower: -691,
+      upper: 711,
+    };
+    expect(estimateElo(features(), 'blitz', wide)).toEqual({
+      kind: 'estimate',
+      value: ELO_MIN,
+      low: ELO_MIN,
+      high: 600,
+      confidence: 'faible',
+    });
+  });
+
+  it('AC-F6-2 : un camp sans aucun coup donne « trop courte », pas « analyse incomplète »', () => {
+    const game = parseGame('1. e4 1-0');
+    const fens = [game.startFen, ...game.plies.map((p) => p.fenAfter)];
+    const evals: PositionEval[] = fens.map((fen) => ({ fen, depth: 14, score: { cp: 0 }, pv: [] }));
+    const report = buildReport(game, evals);
+    expect(report.complete).toBe(true);
+    expect(report.accuracy.black).toBeNull();
+    expect(estimateElo(playerFeatures(report, 'b'), 'blitz', model)).toEqual({ kind: 'too-short' });
+  });
+
+  it('le modèle embarqué suit FEATURE_NAMES et featureVector', () => {
+    expect(eloModelJson.features).toEqual([...FEATURE_NAMES]);
+    expect(featureVector(features(), 'blitz')).toHaveLength(FEATURE_NAMES.length);
+    for (const preset of Object.values((eloModelJson as EloModel).presets)) {
+      expect(preset!.coefficients).toHaveLength(FEATURE_NAMES.length);
+      expect(preset!.lower).toBeLessThan(preset!.upper);
+    }
   });
 });

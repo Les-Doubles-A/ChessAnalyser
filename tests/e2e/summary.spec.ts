@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FOOLS_MATE_PGN } from '../fixtures/chesscom';
-import { foolsMateTable, mockEngine } from './fakeEngine';
+import { foolsMateTable, mockEngine, SLOW_MS } from './fakeEngine';
 import { mockChessCom, searchFor } from './helpers';
 
 async function openGame(page: Page, opponent: RegExp) {
@@ -65,7 +65,7 @@ test.describe('Synthèse de la partie (F7), faux moteur', () => {
   test('E4 : attente pendant l’analyse, puis synthèse partielle après annulation', async ({
     page,
   }) => {
-    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: 700 });
+    await mockEngine(page, foolsMateTable(FOOLS_MATE_PGN), { delayMs: SLOW_MS });
     await openGame(page, /pressé/);
     await expect(summary(page)).toContainText('Disponible à la fin de l’analyse');
     await expect(summary(page).getByRole('table')).toHaveCount(0);

@@ -60,10 +60,24 @@ export function makePly(fen: string, input: MoveInput, index: number): Ply | nul
   const legalMoveCount = new Chess(fen).moves().length;
   let move = tryMove(fen, input);
   if (!move && typeof input === 'string') {
-    const french = input.trim().replace(/^[RDTFC]/, (letter) => FRENCH_PIECES[letter]!);
+    const french = input
+      .trim()
+      .replace(/^[RDTFC]/, (letter) => FRENCH_PIECES[letter]!)
+      // Promotion : « a8=D », « exd8C+ » ou « a8D ».
+      .replace(
+        /(?<=[18])=?([DTFC])(?=[+#]?$)/,
+        (_, letter: string) => `=${FRENCH_PIECES[letter]!}`,
+      );
     if (french !== input.trim()) move = tryMove(fen, french);
   }
   return move ? toPly(move, legalMoveCount, index) : null;
+}
+
+/** Vrai si le déplacement from → to est une promotion légale, qui demande donc une pièce. */
+export function isPromotion(fen: string, from: string, to: string): boolean {
+  return new Chess(fen)
+    .moves({ verbose: true })
+    .some((move) => move.from === from && move.to === to && move.promotion !== undefined);
 }
 
 export function currentFen(game: ParsedGame, state: ExploreState): string {

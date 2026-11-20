@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import type { Preset } from './analysis/runAnalysis';
 import { ChessComClient, ChessComError, validateUsername, type GameSummary } from './api/chesscom';
 import { loadPrefs, savePrefs } from './storage';
 import { AnalysisView } from './ui/AnalysisView';
@@ -27,11 +28,19 @@ const UNAVAILABLE = 'chess.com ne répond pas.';
 
 export function App() {
   const [query, setQuery] = useState(() => loadPrefs().lastUsername ?? '');
+  const [preset, setPreset] = useState<Preset>(() => loadPrefs().preset ?? 'standard');
+  const choosePreset = (value: Preset) => {
+    setPreset(value);
+    savePrefs({ preset: value });
+  };
   const [formError, setFormError] = useState<string>();
   const [list, setList] = useState<ListState>({ status: 'idle' });
   const [selected, setSelected] = useState<{ game: GameSummary; username: string }>();
   const inputRef = useRef<HTMLInputElement>(null);
   const lastQuery = useRef('');
+  // Numéro de la recherche en cours : toute réponse d'une recherche antérieure (même pseudo
+  // compris) est ignorée, y compris celle d'un « Mois précédent » encore en vol.
+  const generation = useRef(0);
 
   const search = useCallback(async (raw: string) => {
     const check = validateUsername(raw);
@@ -41,13 +50,16 @@ export function App() {
       return;
     }
     const username = check.value;
+    const current = ++generation.current;
     lastQuery.current = username;
     setFormError(undefined);
     setList({ status: 'loading' });
-    savePrefs({ lastUsername: username });
     try {
       const { archives, index, games } = await client.getLatestGames(username);
-      if (lastQuery.current !== username) return;
+      if (generation.current !== current) return;
+      // Mémorisé seulement une fois le joueur trouvé : une faute de frappe n'efface pas le
+      // dernier pseudo valide.
+      savePrefs({ lastUsername: username });
       setList({
         status: 'ready',
         username,
@@ -57,7 +69,7 @@ export function App() {
         loadingMore: false,
       });
     } catch (error) {
-      if (lastQuery.current !== username) return;
+      if (generation.current !== current) return;
       if (error instanceof ChessComError && error.kind === 'not-found') {
         setList({ status: 'idle' });
         setFormError(`Aucun joueur chess.com ne porte le pseudo « ${username} ».`);
@@ -69,14 +81,18 @@ export function App() {
   }, []);
 
   const loadPreviousMonth = useCallback(async () => {
-    if (list.status !== 'ready' || list.oldestIndex <= 0) return;
-    const { username } = list;
+    if (list.status !== 'ready' || list.oldestIndex <= 0 || list.loadingMore) return;
+    const started = generation.current;
     const index = list.oldestIndex - 1;
-    setList({ ...list, loadingMore: true, moreError: undefined });
+    setList((current) =>
+      current.status === 'ready'
+        ? { ...current, loadingMore: true, moreError: undefined }
+        : current,
+    );
     try {
       const older = await client.getMonth(list.archives[index]!);
       setList((current) =>
-        current.status === 'ready' && current.username === username
+        current.status === 'ready' && generation.current === started
           ? {
               ...current,
               oldestIndex: index,
@@ -87,7 +103,7 @@ export function App() {
       );
     } catch {
       setList((current) =>
-        current.status === 'ready' && current.username === username
+        current.status === 'ready' && generation.current === started
           ? { ...current, loadingMore: false, moreError: UNAVAILABLE }
           : current,
       );
@@ -100,6 +116,7 @@ export function App() {
         <AnalysisView
           game={selected.game}
           username={selected.username}
+          preset={preset}
           onBack={() => setSelected(undefined)}
         />
       </Layout>
@@ -112,11 +129,15 @@ export function App() {
         ref={inputRef}
         value={query}
         onChange={setQuery}
+        preset={preset}
+        onPresetChange={choosePreset}
         error={formError}
         busy={list.status === 'loading'}
         onSubmit={search}
       />
       <GameList
+        // Remonté à chaque recherche : le filtre de cadence repart sur « Toutes ».
+        key={list.status === 'ready' ? `ready:${list.username}` : list.status}
         state={list}
         onRetry={() => search(lastQuery.current)}
         onLoadMore={loadPreviousMonth}

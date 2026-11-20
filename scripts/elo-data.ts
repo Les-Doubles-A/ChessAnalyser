@@ -8,25 +8,22 @@ import type { Preset } from '../src/analysis/runAnalysis';
 import { parseGame } from '../src/chess/game';
 import type { PositionEval } from '../src/engine/types';
 import { readJsonl } from './data-files';
-import type { AnalysedGame, CollectedGame, Sample } from './dataset';
+import type { CollectedGame, Sample } from './dataset';
+import { readAnalyses, type EngineKind } from './engine-choice';
 
 export interface EloRow {
   sample: Sample;
   features: PlayerFeatures;
 }
 
-export function loadRows(preset: Preset, samplesFile: string) {
+export function loadRows(preset: Preset, samplesFile: string, kind: EngineKind = 'lite') {
   const openings = createOpeningIndex(
     JSON.parse(
       readFileSync(new URL('../src/data/openings.json', import.meta.url), 'utf8'),
     ) as OpeningData,
   );
   const games = new Map(readJsonl<CollectedGame>('games.jsonl').map((g) => [g.id, g]));
-  const analyses = new Map(
-    readJsonl<AnalysedGame>(`analysis-${preset}.jsonl`)
-      .filter((a) => a.evals)
-      .map((a) => [a.id, a]),
-  );
+  const analyses = new Map(readAnalyses(preset, kind).map((a) => [a.id, a]));
   const reports = new Map<string, GameReport | null>();
   const skipped = { notAnalysed: 0, incomplete: 0, tooShort: 0 };
   const rows: EloRow[] = [];
